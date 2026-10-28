@@ -1,6 +1,35 @@
-def main():
-    print("Hello from pharmacy-is!")
+import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from src.core.windows_event_loop import use_selector_event_loop_on_windows
+
+use_selector_event_loop_on_windows()
+
+from src.core.scheduler import build_scheduler
+from src.routers import auth, users
+
+logging.basicConfig(level=logging.INFO)
 
 
-if __name__ == "__main__":
-    main()
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    scheduler = build_scheduler()
+    scheduler.start()
+    try:
+        yield
+    finally:
+        scheduler.shutdown()
+
+
+app = FastAPI(title="Pharmacy IS API", lifespan=lifespan)
+
+app.include_router(auth.router)
+app.include_router(users.router)
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
