@@ -1,14 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import (
-    CheckConstraint,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    func,
-)
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -36,8 +28,9 @@ class OtpCode(Base):
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.user_id", ondelete="CASCADE")
     )
-    # order_id FK is added by a later migration once the ORDERS table exists (feat/orders).
-    order_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    order_id: Mapped[int | None] = mapped_column(
+        ForeignKey("orders.order_id", ondelete="CASCADE")
+    )
     destination: Mapped[str] = mapped_column(String(255), nullable=False)
     code_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(

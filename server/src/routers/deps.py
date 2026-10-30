@@ -15,6 +15,7 @@ from src.repositories.user_repository import UserRepository
 from src.services.auth_service import AuthService
 from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
+from src.services.order_service import OrderService
 from src.services.otp_service import OtpService
 from src.services.supplier_service import SupplierService
 
@@ -45,6 +46,10 @@ def get_category_service(session: DbSession) -> CategoryService:
 
 def get_medicine_service(session: DbSession) -> MedicineService:
     return MedicineService(session)
+
+
+def get_order_service(session: DbSession) -> OrderService:
+    return OrderService(session)
 
 
 async def get_current_user(

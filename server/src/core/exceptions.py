@@ -69,3 +69,33 @@ class CategorySlugConflictError(DomainError):
 class CategoryNotLeafError(DomainError):
     """Raised when a medicine is assigned to a category that has subcategories -
     MEDICINES.category_id must always point at a leaf category."""
+
+
+class OrderNotFoundError(DomainError):
+    pass
+
+
+class InsufficientStockError(DomainError):
+    def __init__(self, medicine_id: int) -> None:
+        self.medicine_id = medicine_id
+        super().__init__(f"Insufficient stock for medicine {medicine_id}")
+
+
+class InvalidOrderStatusTransitionError(DomainError):
+    def __init__(self, from_status: str, to_status: str) -> None:
+        self.from_status = from_status
+        self.to_status = to_status
+        super().__init__(f"Cannot move an order from {from_status} to {to_status}")
+
+
+class IdempotencyKeyConflictError(DomainError):
+    """Raised when an Idempotency-Key is reused across two different customers -
+    a genuine key collision, not a safe-to-replay retry of the same customer's
+    own request. Also what a concurrent-create race on the same key resolves
+    to, if the winning order turns out to belong to someone else."""
+
+    def __init__(self, idempotency_key: str) -> None:
+        self.idempotency_key = idempotency_key
+        super().__init__(
+            f"Idempotency key already used by a different order: {idempotency_key}"
+        )

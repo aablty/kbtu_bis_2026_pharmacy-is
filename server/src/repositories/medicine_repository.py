@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -68,3 +68,25 @@ class MedicineRepository:
         )
         result = await self._session.execute(stmt)
         return result.scalar_one()
+
+    async def decrement_stock(self, medicine_id: int, quantity: int) -> bool:
+        """Atomic conditional decrement - the WHERE guard means two concurrent
+        orders can't both succeed in overselling the last units, without
+        needing a separate version column for this particular race."""
+        stmt = (
+            update(Medicine)
+            .where(
+                Medicine.medicine_id == medicine_id, Medicine.stock_quantity >= quantity
+            )
+            .values(stock_quantity=Medicine.stock_quantity - quantity)
+        )
+        result = await self._session.execute(stmt)
+        return result.rowcount == 1
+
+    async def increment_stock(self, medicine_id: int, quantity: int) -> None:
+        stmt = (
+            update(Medicine)
+            .where(Medicine.medicine_id == medicine_id)
+            .values(stock_quantity=Medicine.stock_quantity + quantity)
+        )
+        await self._session.execute(stmt)
