@@ -1,7 +1,9 @@
 import uuid
 
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.repositories.user_repository import UserRepository
 from tests.conftest import RecordingEmailSender
 
 
@@ -133,4 +135,67 @@ async def test_password_reset_flow(
 
 async def test_protected_endpoint_requires_token(client: AsyncClient) -> None:
     resp = await client.get("/users/me")
+    assert resp.status_code == 401
+
+
+async def test_login_email_is_case_insensitive(
+    client: AsyncClient, email_sender: RecordingEmailSender
+) -> None:
+    email = unique_email()
+    await _register_and_verify(client, email_sender, email)
+
+    resp = await client.post(
+        "/auth/login",
+        json={"email": email.upper(), "password": "correct-horse-1"},
+    )
+    assert resp.status_code == 200
+
+    # And registering the same address again, in a different case, is still a duplicate.
+    resp = await client.post(
+        "/auth/register",
+        json={"email": email.upper(), "password": "another-pass-1"},
+    )
+    assert resp.status_code == 409
+
+
+async def test_forgot_password_response_identical_for_unknown_email(
+    client: AsyncClient, email_sender: RecordingEmailSender
+) -> None:
+    registered_email = unique_email()
+    await _register_and_verify(client, email_sender, registered_email)
+
+    # First call for a registered address starts the cooldown window.
+    resp = await client.post("/auth/forgot-password", json={"email": registered_email})
+    assert resp.status_code == 200
+    registered_body = resp.json()
+
+    # A second call within the cooldown window must look identical to the caller -
+    # no status-code difference that would let an attacker fingerprint registered emails.
+    resp = await client.post("/auth/forgot-password", json={"email": registered_email})
+    assert resp.status_code == 200
+    assert resp.json() == registered_body
+
+    resp = await client.post("/auth/forgot-password", json={"email": unique_email()})
+    assert resp.status_code == 200
+    assert resp.json() == registered_body
+
+
+async def test_refresh_rejected_after_user_deactivated(
+    client: AsyncClient, email_sender: RecordingEmailSender, db_session: AsyncSession
+) -> None:
+    email = unique_email()
+    await _register_and_verify(client, email_sender, email)
+
+    resp = await client.post(
+        "/auth/login", json={"email": email, "password": "correct-horse-1"}
+    )
+    assert resp.status_code == 200
+    refresh_token = resp.json()["refresh_token"]
+
+    user = await UserRepository(db_session).get_by_email(email)
+    assert user is not None
+    user.is_active = False
+    await db_session.commit()
+
+    resp = await client.post("/auth/refresh", json={"refresh_token": refresh_token})
     assert resp.status_code == 401

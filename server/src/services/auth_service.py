@@ -9,6 +9,7 @@ from src.core.exceptions import (
     UserNotFoundError,
 )
 from src.core.security import (
+    DUMMY_PASSWORD_HASH,
     create_access_token,
     create_refresh_token,
     hash_password,
@@ -60,7 +61,12 @@ class AuthService:
 
     async def login(self, email: str, password: str) -> TokenPair:
         user = await self._users.get_by_email(email)
-        if user is None or not verify_password(password, user.password_hash):
+        # Always run bcrypt, even for an unregistered email, against a fixed
+        # dummy hash - keeps response timing the same for "no such user" and
+        # "wrong password" so neither is distinguishable from the outside.
+        password_hash = user.password_hash if user is not None else DUMMY_PASSWORD_HASH
+        password_ok = verify_password(password, password_hash)
+        if user is None or not password_ok:
             raise InvalidCredentialsError(email)
         if user.email_verified_at is None:
             raise EmailNotVerifiedError(email)

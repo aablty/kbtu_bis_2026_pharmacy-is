@@ -1,9 +1,19 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.models.enums import Locale, UserRole
 
 
-class RegisterRequest(BaseModel):
+class _NormalizesEmail(BaseModel):
+    """Lowercases/strips `email` so lookups and the DB unique index are
+    effectively case-insensitive without needing a DB-side migration."""
+
+    @field_validator("email", mode="before", check_fields=False)
+    @classmethod
+    def _normalize_email(cls, v: object) -> object:
+        return v.strip().lower() if isinstance(v, str) else v
+
+
+class RegisterRequest(_NormalizesEmail):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     preferred_locale: Locale = Locale.EN
@@ -15,12 +25,12 @@ class RegisterResponse(BaseModel):
     message: str = "Registration successful. Check your email for a verification code."
 
 
-class VerifyEmailRequest(BaseModel):
+class VerifyEmailRequest(_NormalizesEmail):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(_NormalizesEmail):
     email: EmailStr
     password: str
 
@@ -35,11 +45,11 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class ForgotPasswordRequest(BaseModel):
+class ForgotPasswordRequest(_NormalizesEmail):
     email: EmailStr
 
 
-class ResetPasswordRequest(BaseModel):
+class ResetPasswordRequest(_NormalizesEmail):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
     new_password: str = Field(min_length=8, max_length=128)

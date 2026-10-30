@@ -83,7 +83,10 @@ class OtpService:
 
         if not verify_otp_code(code, otp.code_hash):
             otp.attempt_count += 1
-            await self._session.flush()
+            # Commit (not just flush) here: this method raises right after, and
+            # nothing downstream gets a chance to commit on that path - without
+            # this, the attempt is lost on rollback and the lockout never engages.
+            await self._session.commit()
             raise OtpInvalidError("Incorrect code")
 
         otp.consumed_at = now

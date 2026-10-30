@@ -14,7 +14,8 @@ from src.core.exceptions import (
     UserNotFoundError,
 )
 from src.core.security import TokenType, create_access_token, decode_token
-from src.routers.deps import get_auth_service
+from src.repositories.user_repository import UserRepository
+from src.routers.deps import DbSession, get_auth_service
 from src.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -82,7 +83,7 @@ async def login(payload: LoginRequest, auth_service: AuthServiceDep) -> TokenPai
 
 
 @router.post("/refresh", response_model=TokenPair)
-async def refresh(payload: RefreshRequest) -> TokenPair:
+async def refresh(payload: RefreshRequest, session: DbSession) -> TokenPair:
     try:
         decoded = decode_token(payload.refresh_token)
     except jwt.PyJWTError:
@@ -92,7 +93,14 @@ async def refresh(payload: RefreshRequest) -> TokenPair:
     if decoded.get("type") != TokenType.REFRESH.value:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
 
-    new_access = create_access_token(int(decoded["sub"]), decoded["role"])
+    # Re-check the user in the DB rather than trusting the token's stale claims -
+    # a refresh token can live for weeks; deactivation/role changes in that window
+    # must take effect immediately instead of only once the refresh token expires.
+    user = await UserRepository(session).get_by_id(int(decoded["sub"]))
+    if user is None or not user.is_active:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
+
+    new_access = create_access_token(user.user_id, user.role.value)
     return TokenPair(access_token=new_access, refresh_token=payload.refresh_token)
 
 
@@ -102,8 +110,11 @@ async def forgot_password(
 ) -> MessageResponse:
     try:
         await auth_service.request_password_reset(payload.email)
-    except OtpCooldownError as exc:
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc)) from None
+    except OtpCooldownError:
+        # Same response whether the email exists, is on cooldown, or doesn't
+        # exist at all - a distinct status code here would let an attacker
+        # fingerprint which addresses are registered.
+        pass
     return MessageResponse(message="If that email exists, a reset code has been sent.")
 
 
