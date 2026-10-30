@@ -38,3 +38,34 @@ class OtpLockedError(DomainError):
 
 class InvalidTokenError(DomainError):
     pass
+
+
+class CategoryNotFoundError(DomainError):
+    pass
+
+
+class CategoryCycleError(DomainError):
+    pass
+
+
+class SupplierNotFoundError(DomainError):
+    pass
+
+
+class MedicineNotFoundError(DomainError):
+    pass
+
+
+class EntityInUseError(DomainError):
+    """Raised when a delete is blocked by a FK RESTRICT - something else still
+    references this row (a category's children/medicines, a supplier's medicines)."""
+
+
+class CategorySlugConflictError(DomainError):
+    """Raised when two concurrent creates race on the same generated slug -
+    the proactive uniqueness check can still lose a TOCTOU race under load."""
+
+
+class CategoryNotLeafError(DomainError):
+    """Raised when a medicine is assigned to a category that has subcategories -
+    MEDICINES.category_id must always point at a leaf category."""

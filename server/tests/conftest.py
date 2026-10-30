@@ -1,5 +1,7 @@
 import re
-from collections.abc import AsyncGenerator
+import uuid
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
@@ -12,7 +14,11 @@ use_selector_event_loop_on_windows()
 
 from src.core.database import engine, get_db
 from src.core.email import EmailSender, get_email_sender
+from src.core.security import create_access_token, hash_password
 from src.main import app
+from src.models.enums import UserRole
+from src.models.user import User
+from src.repositories.user_repository import UserRepository
 
 OTP_CODE_RE = re.compile(r"\b(\d{6})\b")
 
@@ -53,6 +59,31 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
 @pytest.fixture
 def email_sender() -> RecordingEmailSender:
     return RecordingEmailSender()
+
+
+UserWithToken = tuple[User, str]
+MakeUserWithToken = Callable[[UserRole], Awaitable[UserWithToken]]
+
+
+@pytest_asyncio.fixture
+def make_user_with_token(db_session: AsyncSession) -> MakeUserWithToken:
+    """Creates an already-verified user with the given role and a matching
+    access token - bypasses the register/verify-email/login flow for tests
+    that only care about role-gated access, not auth itself."""
+
+    async def _make(role: UserRole) -> UserWithToken:
+        user = User(
+            email=f"{role.value}-{uuid.uuid4().hex[:8]}@example.com",
+            password_hash=hash_password("irrelevant-password-1"),
+            role=role,
+            email_verified_at=datetime.now(UTC),
+        )
+        UserRepository(db_session).add(user)
+        await db_session.commit()
+        token = create_access_token(user.user_id, user.role.value)
+        return user, token
+
+    return _make
 
 
 @pytest_asyncio.fixture

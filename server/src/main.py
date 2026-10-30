@@ -9,7 +9,7 @@ from src.core.windows_event_loop import use_selector_event_loop_on_windows
 use_selector_event_loop_on_windows()
 
 from src.core.scheduler import build_scheduler
-from src.routers import auth, users
+from src.routers import auth, categories, medicines, suppliers, users
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,6 +28,9 @@ app = FastAPI(title="Pharmacy IS API", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(suppliers.router)
+app.include_router(categories.router)
+app.include_router(medicines.router)
 
 
 @app.get("/health")

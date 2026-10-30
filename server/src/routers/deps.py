@@ -13,7 +13,10 @@ from src.models.enums import UserRole
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
 from src.services.auth_service import AuthService
+from src.services.category_service import CategoryService
+from src.services.medicine_service import MedicineService
 from src.services.otp_service import OtpService
+from src.services.supplier_service import SupplierService
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
@@ -30,6 +33,18 @@ def get_auth_service(
     session: DbSession, otp_service: Annotated[OtpService, Depends(get_otp_service)]
 ) -> AuthService:
     return AuthService(session, otp_service)
+
+
+def get_supplier_service(session: DbSession) -> SupplierService:
+    return SupplierService(session)
+
+
+def get_category_service(session: DbSession) -> CategoryService:
+    return CategoryService(session)
+
+
+def get_medicine_service(session: DbSession) -> MedicineService:
+    return MedicineService(session)
 
 
 async def get_current_user(
