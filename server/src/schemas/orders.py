@@ -16,6 +16,10 @@ class OrderCreate(BaseModel):
     fulfillment_type: FulfillmentType
     delivery_address: str | None = Field(default=None, max_length=255)
     payment_method: PaymentMethod
+    # Required only when at least one item's medicine requires a
+    # prescription - validated against the customer's own approved
+    # prescriptions in OrderService.place_order.
+    prescription_id: int | None = None
 
     @model_validator(mode="after")
     def _delivery_requires_address(self) -> OrderCreate:
@@ -53,6 +57,7 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     fulfillment_type: FulfillmentType
     delivery_address: str | None
+    prescription_id: int | None
     total_amount: Decimal
     created_at: datetime
     items: list[OrderItemResponse]
@@ -63,3 +68,7 @@ class OrderResponse(BaseModel):
 
 class OrderStatusUpdateRequest(BaseModel):
     status: OrderStatus
+    # Required when completing an order gated behind prescription pickup
+    # verification (order.prescription_id is set) - the code sent to the
+    # customer's email once the order reached "ready".
+    pickup_code: str | None = None

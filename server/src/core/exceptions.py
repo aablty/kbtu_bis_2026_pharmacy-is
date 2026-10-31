@@ -123,3 +123,45 @@ class InvalidSaleCustomerError(DomainError):
     def __init__(self, user_id: int) -> None:
         self.user_id = user_id
         super().__init__(f"User {user_id} is not a customer")
+
+
+class PrescriptionNotFoundError(DomainError):
+    pass
+
+
+class InvalidFileTypeError(DomainError):
+    def __init__(self, content_type: str) -> None:
+        self.content_type = content_type
+        super().__init__(f"Unsupported file type: {content_type}")
+
+
+class FileTooLargeError(DomainError):
+    pass
+
+
+class PrescriptionAlreadyReviewedError(DomainError):
+    pass
+
+
+class PrescriptionRequiredError(DomainError):
+    """Raised by place_order when an item requires a prescription but no
+    approved prescription_id covering this order was supplied."""
+
+
+class PrescriptionNotOwnedError(DomainError):
+    def __init__(self, prescription_id: int) -> None:
+        self.prescription_id = prescription_id
+        super().__init__(
+            f"Prescription {prescription_id} does not belong to this customer"
+        )
+
+
+class PrescriptionNotApprovedError(DomainError):
+    def __init__(self, prescription_id: int) -> None:
+        self.prescription_id = prescription_id
+        super().__init__(f"Prescription {prescription_id} is not approved")
+
+
+class PickupCodeRequiredError(DomainError):
+    """Raised when completing an order gated behind prescription pickup
+    verification without supplying the OTP code sent at the ready stage."""

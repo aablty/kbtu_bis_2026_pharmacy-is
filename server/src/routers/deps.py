@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.core.email import EmailSender, get_email_sender
+from src.core.file_storage import FileStorage, get_file_storage
 from src.core.security import TokenType, decode_token
 from src.models.enums import UserRole
 from src.models.user import User
@@ -17,6 +18,7 @@ from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
 from src.services.order_service import OrderService
 from src.services.otp_service import OtpService
+from src.services.prescription_service import PrescriptionService
 from src.services.sale_service import SaleService
 from src.services.supplier_service import SupplierService
 
@@ -49,12 +51,21 @@ def get_medicine_service(session: DbSession) -> MedicineService:
     return MedicineService(session)
 
 
-def get_order_service(session: DbSession) -> OrderService:
-    return OrderService(session)
+def get_order_service(
+    session: DbSession, otp_service: Annotated[OtpService, Depends(get_otp_service)]
+) -> OrderService:
+    return OrderService(session, otp_service)
 
 
 def get_sale_service(session: DbSession) -> SaleService:
     return SaleService(session)
+
+
+def get_prescription_service(
+    session: DbSession,
+    file_storage: Annotated[FileStorage, Depends(get_file_storage)],
+) -> PrescriptionService:
+    return PrescriptionService(session, file_storage)
 
 
 async def get_current_user(

@@ -3,7 +3,7 @@ import uuid
 from httpx import AsyncClient
 
 from src.models.enums import UserRole
-from tests.conftest import MakeUserWithToken
+from tests.conftest import MakeUserWithToken, RecordingEmailSender
 
 
 def auth_headers(token: str) -> dict[str, str]:
@@ -16,6 +16,7 @@ async def _setup_medicine(
     *,
     stock_quantity: int = 10,
     price: str = "5.00",
+    requires_prescription: bool = False,
 ) -> int:
     resp = await client.post(
         "/suppliers",
@@ -39,11 +40,30 @@ async def _setup_medicine(
             "category_id": category_id,
             "supplier_id": supplier_id,
             "stock_quantity": stock_quantity,
+            "requires_prescription": requires_prescription,
         },
         headers=admin_headers,
     )
     assert resp.status_code == 201, resp.text
     return resp.json()["medicine_id"]
+
+
+async def _upload_and_approve_prescription(
+    client: AsyncClient, customer_token: str, pharmacist_token: str
+) -> int:
+    resp = await client.post(
+        "/prescriptions",
+        files={"file": ("scan.jpg", b"fake-image-bytes", "image/jpeg")},
+        headers=auth_headers(customer_token),
+    )
+    prescription_id = resp.json()["prescription_id"]
+    resp = await client.patch(
+        f"/prescriptions/{prescription_id}/review",
+        json={"approve": True},
+        headers=auth_headers(pharmacist_token),
+    )
+    assert resp.status_code == 200
+    return prescription_id
 
 
 def _order_payload(medicine_id: int, quantity: int = 2) -> dict:
@@ -420,3 +440,237 @@ async def test_order_item_includes_medicine_name(
 # using separate sessions per "request" - reusing one shared session here
 # (as this file's `client` fixture does) can't faithfully simulate the
 # commit/rollback boundary the real bug and fix are both about.
+
+
+async def test_prescription_required_medicine_rejects_order_without_one(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True
+    )
+
+    resp = await client.post(
+        "/orders",
+        json=_order_payload(medicine_id),
+        headers=auth_headers(customer_token),
+    )
+    assert resp.status_code == 400
+
+
+async def test_prescription_required_medicine_rejects_unapproved_prescription(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True
+    )
+
+    resp = await client.post(
+        "/prescriptions",
+        files={"file": ("scan.jpg", b"fake-image-bytes", "image/jpeg")},
+        headers=auth_headers(customer_token),
+    )
+    prescription_id = resp.json()["prescription_id"]
+
+    payload = _order_payload(medicine_id)
+    payload["prescription_id"] = prescription_id
+    resp = await client.post(
+        "/orders", json=payload, headers=auth_headers(customer_token)
+    )
+    assert resp.status_code == 400
+
+
+async def test_prescription_cannot_be_used_by_a_different_customer(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, pharmacist_token = await make_user_with_token(UserRole.PHARMACIST)
+    _, owner_token = await make_user_with_token(UserRole.CUSTOMER)
+    _, other_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True
+    )
+    prescription_id = await _upload_and_approve_prescription(
+        client, owner_token, pharmacist_token
+    )
+
+    payload = _order_payload(medicine_id)
+    payload["prescription_id"] = prescription_id
+    resp = await client.post("/orders", json=payload, headers=auth_headers(other_token))
+    assert resp.status_code == 403
+
+
+async def test_order_with_approved_prescription_succeeds(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, pharmacist_token = await make_user_with_token(UserRole.PHARMACIST)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True
+    )
+    prescription_id = await _upload_and_approve_prescription(
+        client, customer_token, pharmacist_token
+    )
+
+    payload = _order_payload(medicine_id)
+    payload["prescription_id"] = prescription_id
+    resp = await client.post(
+        "/orders", json=payload, headers=auth_headers(customer_token)
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["prescription_id"] == prescription_id
+
+
+async def test_completing_a_prescription_order_requires_the_pickup_code(
+    client: AsyncClient,
+    make_user_with_token: MakeUserWithToken,
+    email_sender: RecordingEmailSender,
+) -> None:
+    """Regression/spec test for the order_pickup OTP flow: reaching `ready`
+    on a prescription-gated order emails a pickup code, and `completed`
+    cannot be reached without supplying the right one."""
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, pharmacist_token = await make_user_with_token(UserRole.PHARMACIST)
+    customer, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True
+    )
+    prescription_id = await _upload_and_approve_prescription(
+        client, customer_token, pharmacist_token
+    )
+
+    payload = _order_payload(medicine_id)
+    payload["prescription_id"] = prescription_id
+    resp = await client.post(
+        "/orders", json=payload, headers=auth_headers(customer_token)
+    )
+    order_id = resp.json()["order_id"]
+
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "ready"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200
+
+    # No code supplied at all.
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "completed"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 400
+
+    # Wrong code.
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "completed", "pickup_code": "000000"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 400
+
+    # Right code, straight from the email the customer would have received.
+    code = email_sender.last_code_for(customer.email)
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "completed", "pickup_code": code},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "completed"
+
+
+async def test_order_without_prescription_items_completes_without_a_code(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(client, auth_headers(admin_token))
+
+    resp = await client.post(
+        "/orders",
+        json=_order_payload(medicine_id),
+        headers=auth_headers(customer_token),
+    )
+    order_id = resp.json()["order_id"]
+
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "ready"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200
+
+    resp = await client.patch(
+        f"/orders/{order_id}/status",
+        json={"status": "completed"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200
+
+
+async def test_two_concurrent_prescription_orders_get_independent_pickup_codes(
+    client: AsyncClient,
+    make_user_with_token: MakeUserWithToken,
+    email_sender: RecordingEmailSender,
+) -> None:
+    """Regression test: order_pickup codes are scoped per order_id, not just
+    per destination. Without that scoping, marking a second prescription
+    order "ready" for the same customer within the 60s resend cooldown would
+    raise OtpCooldownError (both orders share one email), and completing one
+    order could wrongly accept the other order's still-active code."""
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, pharmacist_token = await make_user_with_token(UserRole.PHARMACIST)
+    customer, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(
+        client, auth_headers(admin_token), requires_prescription=True, stock_quantity=10
+    )
+    prescription_id = await _upload_and_approve_prescription(
+        client, customer_token, pharmacist_token
+    )
+
+    order_ids = []
+    for _ in range(2):
+        payload = _order_payload(medicine_id, 1)
+        payload["prescription_id"] = prescription_id
+        resp = await client.post(
+            "/orders", json=payload, headers=auth_headers(customer_token)
+        )
+        assert resp.status_code == 201, resp.text
+        order_ids.append(resp.json()["order_id"])
+
+    codes = []
+    for order_id in order_ids:
+        resp = await client.patch(
+            f"/orders/{order_id}/status",
+            json={"status": "ready"},
+            headers=auth_headers(admin_token),
+        )
+        assert resp.status_code == 200, resp.text
+        codes.append(email_sender.last_code_for(customer.email))
+
+    # Each order only accepts its own code, not the other order's.
+    resp = await client.patch(
+        f"/orders/{order_ids[0]}/status",
+        json={"status": "completed", "pickup_code": codes[1]},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 400
+
+    resp = await client.patch(
+        f"/orders/{order_ids[0]}/status",
+        json={"status": "completed", "pickup_code": codes[0]},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200
+
+    resp = await client.patch(
+        f"/orders/{order_ids[1]}/status",
+        json={"status": "completed", "pickup_code": codes[1]},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200

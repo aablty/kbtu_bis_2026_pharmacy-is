@@ -43,3 +43,9 @@ class PaymentStatus(StrEnum):
     PAID = "paid"
     FAILED = "failed"
     REFUNDED = "refunded"
+
+
+class PrescriptionStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"

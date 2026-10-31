@@ -8,6 +8,14 @@ from src.core.exceptions import (
     InvalidOrderStatusTransitionError,
     MedicineNotFoundError,
     OrderNotFoundError,
+    OtpExpiredError,
+    OtpInvalidError,
+    OtpLockedError,
+    PickupCodeRequiredError,
+    PrescriptionNotApprovedError,
+    PrescriptionNotFoundError,
+    PrescriptionNotOwnedError,
+    PrescriptionRequiredError,
 )
 from src.models.enums import UserRole
 from src.models.order import Order
@@ -38,6 +46,7 @@ def _to_response(
         status=order.status,
         fulfillment_type=order.fulfillment_type,
         delivery_address=order.delivery_address,
+        prescription_id=order.prescription_id,
         total_amount=order.total_amount,
         created_at=order.created_at,
         items=[OrderItemResponse.model_validate(i) for i in items],
@@ -74,6 +83,23 @@ async def place_order(
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Idempotency key already used for a different order",
+        ) from None
+    except PrescriptionRequiredError:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "One or more items require an approved prescription_id",
+        ) from None
+    except PrescriptionNotFoundError:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Prescription not found"
+        ) from None
+    except PrescriptionNotOwnedError:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Prescription does not belong to you"
+        ) from None
+    except PrescriptionNotApprovedError:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Prescription has not been approved"
         ) from None
     items = await service.get_items(order.order_id)
     payment = await service.get_payment(order.order_id)
@@ -138,7 +164,7 @@ async def update_order_status(
 ) -> OrderResponse:
     try:
         order = await service.update_status(
-            order_id, payload.status, current_user.user_id
+            order_id, payload.status, current_user.user_id, payload.pickup_code
         )
     except OrderNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found") from None
@@ -146,6 +172,19 @@ async def update_order_status(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Cannot move an order from {exc.from_status} to {exc.to_status}",
+        ) from None
+    except PickupCodeRequiredError:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "This order requires a pickup_code to complete",
+        ) from None
+    except OtpInvalidError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Incorrect code") from None
+    except OtpExpiredError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Code has expired") from None
+    except OtpLockedError:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, "Too many failed attempts"
         ) from None
     items = await service.get_items(order_id)
     payment = await service.get_payment(order_id)

@@ -41,7 +41,9 @@ class OtpService:
         user_id: int | None = None,
         order_id: int | None = None,
     ) -> OtpCode:
-        existing = await self._repo.get_latest_active(purpose, destination)
+        existing = await self._repo.get_latest_active(
+            purpose, destination, order_id=order_id
+        )
         now = datetime.now(UTC)
         if existing is not None:
             cooldown_until = existing.created_at + timedelta(
@@ -70,8 +72,17 @@ class OtpService:
         )
         return otp
 
-    async def verify(self, purpose: OtpPurpose, destination: str, code: str) -> OtpCode:
-        otp = await self._repo.get_latest_active(purpose, destination)
+    async def verify(
+        self,
+        purpose: OtpPurpose,
+        destination: str,
+        code: str,
+        *,
+        order_id: int | None = None,
+    ) -> OtpCode:
+        otp = await self._repo.get_latest_active(
+            purpose, destination, order_id=order_id
+        )
         if otp is None:
             raise OtpInvalidError("No active code for this destination")
 

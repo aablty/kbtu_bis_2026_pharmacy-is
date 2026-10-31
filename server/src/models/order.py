@@ -35,6 +35,12 @@ class Order(Base):
         nullable=False,
     )
     delivery_address: Mapped[str | None] = mapped_column(String(255))
+    # Set only when at least one item requires a prescription - its presence
+    # is what gates the ready->completed transition behind an order_pickup
+    # OTP (see OrderService.update_status), not just a reference for display.
+    prescription_id: Mapped[int | None] = mapped_column(
+        ForeignKey("prescriptions.prescription_id", ondelete="RESTRICT")
+    )
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     # Set from the client's Idempotency-Key header, when given - lets a retried
     # checkout request return the original order instead of creating a duplicate.

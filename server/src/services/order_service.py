@@ -10,15 +10,23 @@ from src.core.exceptions import (
     InvalidOrderStatusTransitionError,
     MedicineNotFoundError,
     OrderNotFoundError,
+    PickupCodeRequiredError,
+    PrescriptionNotApprovedError,
+    PrescriptionNotFoundError,
+    PrescriptionNotOwnedError,
+    PrescriptionRequiredError,
 )
-from src.models.enums import OrderStatus, PaymentStatus
+from src.models.enums import OrderStatus, OtpPurpose, PaymentStatus, PrescriptionStatus
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.payment import Payment
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
 from src.repositories.payment_repository import PaymentRepository
+from src.repositories.prescription_repository import PrescriptionRepository
+from src.repositories.user_repository import UserRepository
 from src.schemas.orders import OrderCreate
+from src.services.otp_service import OtpService
 from src.services.sale_service import SaleService
 
 # A terminal status (empty set) has no further transitions - COMPLETED and
@@ -33,12 +41,15 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 
 
 class OrderService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, otp_service: OtpService) -> None:
         self._session = session
         self._orders = OrderRepository(session)
         self._medicines = MedicineRepository(session)
         self._payments = PaymentRepository(session)
+        self._prescriptions = PrescriptionRepository(session)
+        self._users = UserRepository(session)
         self._sales = SaleService(session)
+        self._otp = otp_service
 
     async def place_order(
         self, customer_id: int, data: OrderCreate, idempotency_key: str | None
@@ -68,11 +79,25 @@ class OrderService:
             start=Decimal(0),
         )
 
+        prescription_id: int | None = None
+        if any(medicine.requires_prescription for medicine in medicines):
+            if data.prescription_id is None:
+                raise PrescriptionRequiredError()
+            prescription = await self._prescriptions.get_by_id(data.prescription_id)
+            if prescription is None:
+                raise PrescriptionNotFoundError(data.prescription_id)
+            if prescription.customer_id != customer_id:
+                raise PrescriptionNotOwnedError(data.prescription_id)
+            if prescription.status != PrescriptionStatus.APPROVED:
+                raise PrescriptionNotApprovedError(data.prescription_id)
+            prescription_id = prescription.prescription_id
+
         order = Order(
             customer_id=customer_id,
             status=OrderStatus.PENDING,
             fulfillment_type=data.fulfillment_type,
             delivery_address=data.delivery_address,
+            prescription_id=prescription_id,
             total_amount=total_amount,
             idempotency_key=idempotency_key,
         )
@@ -156,13 +181,48 @@ class OrderService:
         return await self._payments.get_latest_for_orders(order_ids)
 
     async def update_status(
-        self, order_id: int, new_status: OrderStatus, changed_by: int | None
+        self,
+        order_id: int,
+        new_status: OrderStatus,
+        changed_by: int | None,
+        pickup_code: str | None = None,
     ) -> Order:
         order = await self.get(order_id)
         if new_status not in _ALLOWED_TRANSITIONS[order.status]:
             raise InvalidOrderStatusTransitionError(
                 order.status.value, new_status.value
             )
+
+        if order.prescription_id is not None and new_status in (
+            OrderStatus.READY,
+            OrderStatus.COMPLETED,
+        ):
+            customer = await self._users.get_by_id(order.customer_id)
+            if customer is None:
+                # orders.customer_id -> users.user_id is ON DELETE RESTRICT,
+                # so this can't actually happen - raised instead of asserted
+                # so it can't be silently compiled away under `python -O`.
+                raise RuntimeError(
+                    f"Order {order.order_id} references a deleted customer"
+                )
+
+            if new_status == OrderStatus.READY:
+                await self._otp.issue(
+                    OtpPurpose.ORDER_PICKUP, customer.email, order_id=order.order_id
+                )
+            else:
+                if pickup_code is None:
+                    raise PickupCodeRequiredError()
+                # Verify first, before any other mutation below - same
+                # ordering AuthService uses for OTP-gated actions, so a
+                # wrong/locked code only ever commits its own attempt_count
+                # bump, never a partial order transition.
+                await self._otp.verify(
+                    OtpPurpose.ORDER_PICKUP,
+                    customer.email,
+                    pickup_code,
+                    order_id=order.order_id,
+                )
 
         if new_status == OrderStatus.CANCELLED:
             for item in await self._orders.get_items(order_id):

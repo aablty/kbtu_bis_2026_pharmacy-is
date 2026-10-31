@@ -43,3 +43,7 @@ venv.bak/
 .ruff_cache/
 
 run_dev.py
+
+# Local-dev file storage fallback (LocalFileStorage) - never used when
+# CLOUDINARY_URL is configured, see core/file_storage.py
+uploads/

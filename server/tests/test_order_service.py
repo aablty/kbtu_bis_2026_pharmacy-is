@@ -1,9 +1,10 @@
 from decimal import Decimal
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.core.database import engine
+from src.core.email import ConsoleEmailSender
 from src.core.security import hash_password
 from src.core.windows_event_loop import use_selector_event_loop_on_windows
 from src.models.category import Category
@@ -20,8 +21,16 @@ from src.repositories.supplier_repository import SupplierRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.orders import OrderCreate, OrderItemCreate
 from src.services.order_service import OrderService
+from src.services.otp_service import OtpService
 
 use_selector_event_loop_on_windows()
+
+
+def _order_service(session: AsyncSession) -> OrderService:
+    """None of these tests exercise prescription-gated pickup, so a
+    throwaway OtpService (never actually called) just satisfies the
+    constructor."""
+    return OrderService(session, OtpService(session, ConsoleEmailSender()))
 
 
 async def test_concurrent_idempotency_key_race_returns_winner_not_500() -> None:
@@ -85,7 +94,7 @@ async def test_concurrent_idempotency_key_race_returns_winner_not_500() -> None:
 
             # "Request 1": places the order normally and wins the race.
             async with session_factory() as session_one:
-                first_order = await OrderService(session_one).place_order(
+                first_order = await _order_service(session_one).place_order(
                     customer_id, order_data, shared_key
                 )
                 first_order_id = first_order.order_id
@@ -96,7 +105,7 @@ async def test_concurrent_idempotency_key_race_returns_winner_not_500() -> None:
             # but tells the truth from the second call on, once its own INSERT
             # has failed and it needs to recover.
             async with session_factory() as session_two:
-                racy_service = OrderService(session_two)
+                racy_service = _order_service(session_two)
                 real_lookup = racy_service._orders.get_by_idempotency_key
                 call_count = 0
 
@@ -188,7 +197,7 @@ async def test_concurrent_order_completion_returns_winner_not_500() -> None:
                 employee_id = employee.user_id
                 medicine_id = medicine.medicine_id
 
-                order = await OrderService(session_zero).place_order(
+                order = await _order_service(session_zero).place_order(
                     customer_id,
                     OrderCreate(
                         items=[OrderItemCreate(medicine_id=medicine_id, quantity=1)],
@@ -198,7 +207,7 @@ async def test_concurrent_order_completion_returns_winner_not_500() -> None:
                     None,
                 )
                 order_id = order.order_id
-                await OrderService(session_zero).update_status(
+                await _order_service(session_zero).update_status(
                     order_id, OrderStatus.READY, employee_id
                 )
 
@@ -216,7 +225,7 @@ async def test_concurrent_order_completion_returns_winner_not_500() -> None:
                 await session_zero.commit()
 
             async with session_factory() as session_one:
-                racy_service = OrderService(session_one)
+                racy_service = _order_service(session_one)
                 real_lookup = racy_service._sales._sales.get_by_order_id
                 call_count = 0
 
