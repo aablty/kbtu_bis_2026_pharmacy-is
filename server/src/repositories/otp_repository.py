@@ -39,4 +39,4 @@ class OtpRepository:
                 (OtpCode.expires_at < now) | (OtpCode.consumed_at.is_not(None))
             )
         )
-        return result.rowcount or 0
+        return result.rowcount or 0  # ty: ignore[unresolved-attribute]

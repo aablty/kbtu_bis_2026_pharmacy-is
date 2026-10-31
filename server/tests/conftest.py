@@ -65,7 +65,7 @@ UserWithToken = tuple[User, str]
 MakeUserWithToken = Callable[[UserRole], Awaitable[UserWithToken]]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def make_user_with_token(db_session: AsyncSession) -> MakeUserWithToken:
     """Creates an already-verified user with the given role and a matching
     access token - bypasses the register/verify-email/login flow for tests

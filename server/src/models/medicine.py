@@ -30,6 +30,10 @@ class Medicine(Base):
     )
     stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reorder_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Bumped by every stock-mutating write (order placement/cancellation, POS
+    # sale) so the sales flow's optimistic-locking check can detect *any*
+    # concurrent change to this row, not just ones it made itself.
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     category_id: Mapped[int] = mapped_column(
         ForeignKey("categories.category_id", ondelete="RESTRICT"),
         nullable=False,

@@ -17,6 +17,7 @@ from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
 from src.services.order_service import OrderService
 from src.services.otp_service import OtpService
+from src.services.sale_service import SaleService
 from src.services.supplier_service import SupplierService
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -50,6 +51,10 @@ def get_medicine_service(session: DbSession) -> MedicineService:
 
 def get_order_service(session: DbSession) -> OrderService:
     return OrderService(session)
+
+
+def get_sale_service(session: DbSession) -> SaleService:
+    return SaleService(session)
 
 
 async def get_current_user(

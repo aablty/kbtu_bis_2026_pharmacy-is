@@ -99,3 +99,27 @@ class IdempotencyKeyConflictError(DomainError):
         super().__init__(
             f"Idempotency key already used by a different order: {idempotency_key}"
         )
+
+
+class SaleNotFoundError(DomainError):
+    pass
+
+
+class StockVersionConflictError(DomainError):
+    """Raised by the optimistic-locking stock decrement when another write
+    touched this medicine between the read and this attempt - distinct from
+    InsufficientStockError so the caller (cashier/UI) knows to just retry,
+    not to tell the customer the item is out of stock."""
+
+    def __init__(self, medicine_id: int) -> None:
+        self.medicine_id = medicine_id
+        super().__init__(f"Medicine {medicine_id} was updated concurrently, retry")
+
+
+class InvalidSaleCustomerError(DomainError):
+    """Raised when a sale's customer_id points at a real user who isn't a
+    CUSTOMER - e.g. a staff account - rather than at a nonexistent user."""
+
+    def __init__(self, user_id: int) -> None:
+        self.user_id = user_id
+        super().__init__(f"User {user_id} is not a customer")

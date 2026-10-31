@@ -19,6 +19,7 @@ from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
 from src.repositories.payment_repository import PaymentRepository
 from src.schemas.orders import OrderCreate
+from src.services.sale_service import SaleService
 
 # A terminal status (empty set) has no further transitions - COMPLETED and
 # CANCELLED are both dead ends by design, matching a real order's lifecycle.
@@ -37,6 +38,7 @@ class OrderService:
         self._orders = OrderRepository(session)
         self._medicines = MedicineRepository(session)
         self._payments = PaymentRepository(session)
+        self._sales = SaleService(session)
 
     async def place_order(
         self, customer_id: int, data: OrderCreate, idempotency_key: str | None
@@ -172,6 +174,23 @@ class OrderService:
             payment = await self._payments.get_latest_for_order(order_id)
             if payment is not None and payment.status == PaymentStatus.PAID:
                 payment.status = PaymentStatus.REFUNDED
+
+        if new_status == OrderStatus.COMPLETED:
+            if changed_by is None:
+                raise ValueError("completing an order requires an acting employee")
+            order_items = await self._orders.get_items(order_id)
+            try:
+                await self._sales.create_from_order(order, order_items, changed_by)
+            except IntegrityError:
+                # Two concurrent completion requests can both pass the
+                # transition check above before either commits -
+                # SALES.order_id's unique constraint catches the loser here.
+                # Nothing else in this transaction has been written yet on
+                # this path, so rolling back only discards this attempt; the
+                # winner already recorded the sale and completed the order,
+                # so just return its result instead of erroring.
+                await self._session.rollback()
+                return await self.get(order_id)
 
         order.status = new_status
         self._orders.add_status_history(order_id, new_status, changed_by)

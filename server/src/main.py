@@ -9,7 +9,7 @@ from src.core.windows_event_loop import use_selector_event_loop_on_windows
 use_selector_event_loop_on_windows()
 
 from src.core.scheduler import build_scheduler
-from src.routers import auth, categories, medicines, orders, suppliers, users
+from src.routers import auth, categories, medicines, orders, sales, suppliers, users
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,6 +32,7 @@ app.include_router(suppliers.router)
 app.include_router(categories.router)
 app.include_router(medicines.router)
 app.include_router(orders.router)
+app.include_router(sales.router)
 
 
 @app.get("/health")

@@ -5,6 +5,8 @@ from src.models.order_item import OrderItem
 from src.models.order_status_history import OrderStatusHistory
 from src.models.otp import OtpCode
 from src.models.payment import Payment
+from src.models.sale import Sale
+from src.models.sale_item import SaleItem
 from src.models.supplier import Supplier
 from src.models.user import User
 
@@ -16,6 +18,8 @@ __all__ = [
     "OrderStatusHistory",
     "OtpCode",
     "Payment",
+    "Sale",
+    "SaleItem",
     "Supplier",
     "User",
 ]
