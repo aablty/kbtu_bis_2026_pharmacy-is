@@ -16,7 +16,13 @@ from src.core.exceptions import (
     PrescriptionNotOwnedError,
     PrescriptionRequiredError,
 )
-from src.models.enums import OrderStatus, OtpPurpose, PaymentStatus, PrescriptionStatus
+from src.models.enums import (
+    NotificationType,
+    OrderStatus,
+    OtpPurpose,
+    PaymentStatus,
+    PrescriptionStatus,
+)
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.payment import Payment
@@ -26,6 +32,7 @@ from src.repositories.payment_repository import PaymentRepository
 from src.repositories.prescription_repository import PrescriptionRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.orders import OrderCreate
+from src.services.notification_service import NotificationService
 from src.services.otp_service import OtpService
 from src.services.sale_service import SaleService
 
@@ -41,15 +48,21 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 
 
 class OrderService:
-    def __init__(self, session: AsyncSession, otp_service: OtpService) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        otp_service: OtpService,
+        notification_service: NotificationService,
+    ) -> None:
         self._session = session
         self._orders = OrderRepository(session)
         self._medicines = MedicineRepository(session)
         self._payments = PaymentRepository(session)
         self._prescriptions = PrescriptionRepository(session)
         self._users = UserRepository(session)
-        self._sales = SaleService(session)
+        self._sales = SaleService(session, notification_service)
         self._otp = otp_service
+        self._notifications = notification_service
 
     async def place_order(
         self, customer_id: int, data: OrderCreate, idempotency_key: str | None
@@ -136,6 +149,7 @@ class OrderService:
                     medicine_name=medicine.name,
                 )
             )
+            await self._notifications.notify_staff_low_stock(medicine)
 
         # Payment is simulated - no real gateway, so it always succeeds instantly
         # and the order moves straight from pending to confirmed.
@@ -254,5 +268,11 @@ class OrderService:
 
         order.status = new_status
         self._orders.add_status_history(order_id, new_status, changed_by)
+        self._notifications.notify_user(
+            order.customer_id,
+            NotificationType.ORDER_STATUS,
+            f"Your order #{order.order_id} is now {new_status.value}.",
+            related_id=order.order_id,
+        )
         await self._session.commit()
         return order

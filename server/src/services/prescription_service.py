@@ -9,9 +9,10 @@ from src.core.exceptions import (
     PrescriptionNotFoundError,
 )
 from src.core.file_storage import FileStorage
-from src.models.enums import PrescriptionStatus
+from src.models.enums import NotificationType, PrescriptionStatus
 from src.models.prescription import Prescription
 from src.repositories.prescription_repository import PrescriptionRepository
+from src.services.notification_service import NotificationService
 
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "application/pdf"}
 # Public (no leading underscore) - the router reads at most this many bytes
@@ -20,10 +21,16 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 
 class PrescriptionService:
-    def __init__(self, session: AsyncSession, file_storage: FileStorage) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        file_storage: FileStorage,
+        notification_service: NotificationService,
+    ) -> None:
         self._session = session
         self._repo = PrescriptionRepository(session)
         self._storage = file_storage
+        self._notifications = notification_service
 
     async def upload(
         self, customer_id: int, filename: str, content_type: str, content: bytes
@@ -66,5 +73,16 @@ class PrescriptionService:
         prescription.reviewed_by = reviewer_id
         prescription.reviewed_at = datetime.now(UTC)
         prescription.rejection_reason = None if approve else reason
+
+        message = f"Your prescription has been {prescription.status.value}."
+        if not approve and reason:
+            message += f" Reason: {reason}"
+        self._notifications.notify_user(
+            prescription.customer_id,
+            NotificationType.PRESCRIPTION_STATUS,
+            message,
+            related_id=prescription.prescription_id,
+        )
+
         await self._session.commit()
         return prescription

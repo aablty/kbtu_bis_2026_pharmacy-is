@@ -1,5 +1,6 @@
 from src.models.category import Category
 from src.models.medicine import Medicine
+from src.models.notification import Notification
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.order_status_history import OrderStatusHistory
@@ -14,6 +15,7 @@ from src.models.user import User
 __all__ = [
     "Category",
     "Medicine",
+    "Notification",
     "Order",
     "OrderItem",
     "OrderStatusHistory",

@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models.enums import UserRole
 from src.models.user import User
 
 
@@ -23,3 +24,9 @@ class UserRepository:
 
     def add(self, user: User) -> None:
         self._session.add(user)
+
+    async def list_active_by_roles(self, *roles: UserRole) -> list[User]:
+        result = await self._session.execute(
+            select(User).where(User.role.in_(roles), User.is_active)
+        )
+        return list(result.scalars().all())

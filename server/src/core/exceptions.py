@@ -170,3 +170,7 @@ class PrescriptionNotApprovedError(DomainError):
 class PickupCodeRequiredError(DomainError):
     """Raised when completing an order gated behind prescription pickup
     verification without supplying the OTP code sent at the ready stage."""
+
+
+class NotificationNotFoundError(DomainError):
+    pass

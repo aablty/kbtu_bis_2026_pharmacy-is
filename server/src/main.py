@@ -14,6 +14,7 @@ from src.routers import (
     auth,
     categories,
     medicines,
+    notifications,
     orders,
     prescriptions,
     sales,
@@ -48,6 +49,7 @@ app.include_router(medicines.router)
 app.include_router(orders.router)
 app.include_router(sales.router)
 app.include_router(prescriptions.router)
+app.include_router(notifications.router)
 
 
 @app.get("/health")

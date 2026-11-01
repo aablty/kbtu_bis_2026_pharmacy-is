@@ -19,14 +19,18 @@ from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.sale_repository import SaleRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.sales import SaleItemCreate
+from src.services.notification_service import NotificationService
 
 
 class SaleService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self, session: AsyncSession, notification_service: NotificationService
+    ) -> None:
         self._session = session
         self._sales = SaleRepository(session)
         self._medicines = MedicineRepository(session)
         self._users = UserRepository(session)
+        self._notifications = notification_service
 
     async def process_pos_sale(
         self, employee_id: int, customer_id: int | None, items: list[SaleItemCreate]
@@ -82,6 +86,10 @@ class SaleService:
                     medicine_name=medicine.name,
                 )
             )
+            # medicine.stock_quantity already reflects the decrement above -
+            # the ORM auto-refreshes it from the matching UPDATE in this
+            # same session, no extra query needed.
+            await self._notifications.notify_staff_low_stock(medicine)
 
         await self._session.commit()
         return sale

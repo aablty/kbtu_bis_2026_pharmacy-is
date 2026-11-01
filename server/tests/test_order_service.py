@@ -20,6 +20,7 @@ from src.repositories.sale_repository import SaleRepository
 from src.repositories.supplier_repository import SupplierRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.orders import OrderCreate, OrderItemCreate
+from src.services.notification_service import NotificationService
 from src.services.order_service import OrderService
 from src.services.otp_service import OtpService
 
@@ -30,7 +31,9 @@ def _order_service(session: AsyncSession) -> OrderService:
     """None of these tests exercise prescription-gated pickup, so a
     throwaway OtpService (never actually called) just satisfies the
     constructor."""
-    return OrderService(session, OtpService(session, ConsoleEmailSender()))
+    return OrderService(
+        session, OtpService(session, ConsoleEmailSender()), NotificationService(session)
+    )
 
 
 async def test_concurrent_idempotency_key_race_returns_winner_not_500() -> None:

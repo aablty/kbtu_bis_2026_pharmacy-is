@@ -49,3 +49,9 @@ class PrescriptionStatus(StrEnum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+class NotificationType(StrEnum):
+    LOW_STOCK = "low_stock"
+    ORDER_STATUS = "order_status"
+    PRESCRIPTION_STATUS = "prescription_status"

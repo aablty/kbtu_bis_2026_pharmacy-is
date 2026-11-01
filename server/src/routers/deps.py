@@ -16,6 +16,7 @@ from src.repositories.user_repository import UserRepository
 from src.services.auth_service import AuthService
 from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
+from src.services.notification_service import NotificationService
 from src.services.order_service import OrderService
 from src.services.otp_service import OtpService
 from src.services.prescription_service import PrescriptionService
@@ -51,21 +52,37 @@ def get_medicine_service(session: DbSession) -> MedicineService:
     return MedicineService(session)
 
 
+def get_notification_service(session: DbSession) -> NotificationService:
+    return NotificationService(session)
+
+
 def get_order_service(
-    session: DbSession, otp_service: Annotated[OtpService, Depends(get_otp_service)]
+    session: DbSession,
+    otp_service: Annotated[OtpService, Depends(get_otp_service)],
+    notification_service: Annotated[
+        NotificationService, Depends(get_notification_service)
+    ],
 ) -> OrderService:
-    return OrderService(session, otp_service)
+    return OrderService(session, otp_service, notification_service)
 
 
-def get_sale_service(session: DbSession) -> SaleService:
-    return SaleService(session)
+def get_sale_service(
+    session: DbSession,
+    notification_service: Annotated[
+        NotificationService, Depends(get_notification_service)
+    ],
+) -> SaleService:
+    return SaleService(session, notification_service)
 
 
 def get_prescription_service(
     session: DbSession,
     file_storage: Annotated[FileStorage, Depends(get_file_storage)],
+    notification_service: Annotated[
+        NotificationService, Depends(get_notification_service)
+    ],
 ) -> PrescriptionService:
-    return PrescriptionService(session, file_storage)
+    return PrescriptionService(session, file_storage, notification_service)
 
 
 async def get_current_user(

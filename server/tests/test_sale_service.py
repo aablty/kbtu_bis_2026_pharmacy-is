@@ -17,6 +17,7 @@ from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.supplier_repository import SupplierRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.sales import SaleItemCreate
+from src.services.notification_service import NotificationService
 from src.services.sale_service import SaleService
 
 use_selector_event_loop_on_windows()
@@ -123,7 +124,7 @@ async def test_process_pos_sale_raises_conflict_on_concurrent_write() -> None:
                 employee_id = await _seed_employee(session_zero, UserRole.CASHIER)
 
             async with session_factory() as session_one:
-                service = SaleService(session_one)
+                service = SaleService(session_one, NotificationService(session_one))
                 # Primes session_one's identity map - process_pos_sale's own
                 # internal get_by_id() will return this same cached object.
                 stale = await MedicineRepository(session_one).get_by_id(medicine_id)
