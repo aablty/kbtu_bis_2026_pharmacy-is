@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: pillpoint-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: server
+    healthCheckPath: /health
+    # preDeployCommand needs a paid plan; free tier runs migrations at the
+    # end of buildCommand instead - same env vars, still before startCommand.
+    buildCommand: uv sync --frozen --no-dev && uv run alembic upgrade head
+    # Not run_dev.py - that's the Windows-only local dev entrypoint (works
+    # around a Windows/psycopg3 event-loop bug that doesn't exist on
+    # Render's Linux containers). Render injects PORT; must bind 0.0.0.0.
+    startCommand: uv run uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.8
+      # Secrets (sync: false) - Render prompts for these once, at Blueprint
+      # creation, and never stores or syncs the value from this file.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
