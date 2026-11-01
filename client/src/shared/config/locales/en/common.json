@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "PillPoint"
+  },
+  "home": {
+    "title": "Welcome to PillPoint",
+    "subtitle": "Your pharmacy, organized."
+  }
+}

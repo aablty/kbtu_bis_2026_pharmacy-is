@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "PillPoint"
+  },
+  "home": {
+    "title": "Добро пожаловать в PillPoint",
+    "subtitle": "Ваша аптека, в порядке."
+  }
+}
