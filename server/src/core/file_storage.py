@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -10,6 +11,19 @@ from urllib.parse import urlparse
 from src.core.config import get_settings
 
 logger = logging.getLogger("pharmacy.file_storage")
+
+_CLOUDINARY_PRESCRIPTIONS_FOLDER = "prescriptions"
+
+
+def _cloudinary_folder(base: str) -> str:
+    """Suffixes the folder with `_test` during a pytest run, checked at
+    call time (not import time, since pytest only sets this once a test
+    actually starts) - there's no paid Cloudinary plan here for a separate
+    dev/prod environment, so this is what keeps automated-test uploads out
+    of the same folder real/manual ones land in."""
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return f"{base}_test"
+    return base
 
 
 @dataclass(frozen=True)
@@ -87,7 +101,10 @@ class CloudinaryFileStorage(FileStorage):
             # request (and, in tests, the whole suite) if Cloudinary is
             # ever slow or unreachable.
             result = cloudinary.uploader.upload(
-                content, resource_type="auto", folder="prescriptions", timeout=10
+                content,
+                resource_type="auto",
+                folder=_cloudinary_folder(_CLOUDINARY_PRESCRIPTIONS_FOLDER),
+                timeout=10,
             )
             return str(result["secure_url"])
 
