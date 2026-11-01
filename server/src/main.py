@@ -3,12 +3,14 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.core.windows_event_loop import use_selector_event_loop_on_windows
 
 use_selector_event_loop_on_windows()
 
+from src.core.config import get_settings
 from src.core.scheduler import build_scheduler
 from src.routers import (
     auth,
@@ -36,6 +38,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 
 app = FastAPI(title="Pharmacy IS API", lifespan=lifespan)
+
+# Single configured origin, not "*" - allow_credentials requires a specific
+# origin, and this app sends the JWT via the Authorization header (no
+# cookies), so credentials aren't strictly needed either, but a wildcard
+# would also defeat the point of restricting this at all.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[get_settings().frontend_base_url],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Served when CLOUDINARY_URL isn't configured - LocalFileStorage writes
 # prescription uploads here instead (see core/file_storage.py).
