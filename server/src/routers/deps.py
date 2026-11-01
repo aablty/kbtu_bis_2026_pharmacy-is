@@ -13,6 +13,7 @@ from src.core.security import TokenType, decode_token
 from src.models.enums import UserRole
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
+from src.services.analytics_service import AnalyticsService
 from src.services.auth_service import AuthService
 from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
@@ -42,6 +43,10 @@ def get_auth_service(
 
 def get_supplier_service(session: DbSession) -> SupplierService:
     return SupplierService(session)
+
+
+def get_analytics_service(session: DbSession) -> AnalyticsService:
+    return AnalyticsService(session)
 
 
 def get_category_service(session: DbSession) -> CategoryService:

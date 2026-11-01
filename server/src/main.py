@@ -13,6 +13,7 @@ use_selector_event_loop_on_windows()
 from src.core.config import get_settings
 from src.core.scheduler import build_scheduler
 from src.routers import (
+    analytics,
     auth,
     categories,
     medicines,
@@ -64,6 +65,7 @@ app.include_router(orders.router)
 app.include_router(sales.router)
 app.include_router(prescriptions.router)
 app.include_router(notifications.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health")
