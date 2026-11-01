@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     cloudinary_url: str | None = None
     google_client_id: str | None = None
 
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
