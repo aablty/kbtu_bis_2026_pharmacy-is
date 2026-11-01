@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from src.core.exceptions import (
     EmailAlreadyRegisteredError,
     EmailNotVerifiedError,
+    GoogleTokenInvalidError,
     InvalidCredentialsError,
     OtpCooldownError,
     OtpExpiredError,
@@ -18,6 +19,7 @@ from src.repositories.user_repository import UserRepository
 from src.routers.deps import DbSession, get_auth_service
 from src.schemas.auth import (
     ForgotPasswordRequest,
+    GoogleLoginRequest,
     LoginRequest,
     MessageResponse,
     RefreshRequest,
@@ -80,6 +82,18 @@ async def login(payload: LoginRequest, auth_service: AuthServiceDep) -> TokenPai
         ) from None
     except EmailNotVerifiedError:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Email not verified") from None
+
+
+@router.post("/google", response_model=TokenPair)
+async def login_with_google(
+    payload: GoogleLoginRequest, auth_service: AuthServiceDep
+) -> TokenPair:
+    try:
+        return await auth_service.login_with_google(payload.id_token)
+    except GoogleTokenInvalidError:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Invalid Google token"
+        ) from None
 
 
 @router.post("/refresh", response_model=TokenPair)

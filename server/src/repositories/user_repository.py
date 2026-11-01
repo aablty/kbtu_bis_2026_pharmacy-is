@@ -15,5 +15,11 @@ class UserRepository:
         result = await self._session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_by_google_id(self, google_id: str) -> User | None:
+        result = await self._session.execute(
+            select(User).where(User.google_id == google_id)
+        )
+        return result.scalar_one_or_none()
+
     def add(self, user: User) -> None:
         self._session.add(user)

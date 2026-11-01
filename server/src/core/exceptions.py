@@ -18,6 +18,11 @@ class UserNotFoundError(DomainError):
     pass
 
 
+class GoogleTokenInvalidError(DomainError):
+    """Raised when a Google ID token fails signature/audience/issuer
+    verification, is expired, or its email isn't Google-verified."""
+
+
 class OtpCooldownError(DomainError):
     def __init__(self, retry_after_seconds: int) -> None:
         self.retry_after_seconds = retry_after_seconds

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str | None = None
     cloudinary_url: str | None = None
+    google_client_id: str | None = None
 
 
 @lru_cache

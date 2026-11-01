@@ -14,7 +14,13 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Nullable - a Google-only account has no password until it sets one via
+    # the normal forgot-password flow.
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    # Google's stable account id ("sub" claim) - nullable/unique, set once a
+    # user signs in with Google (either a brand-new account or linked to an
+    # existing email/password one).
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(
             UserRole, name="user_role", values_callable=lambda e: [m.value for m in e]
