@@ -22,7 +22,6 @@ class Settings(BaseSettings):
 
     frontend_base_url: str = "http://localhost:5173"
 
-    gemini_api_key: str | None = None
     cloudinary_url: str | None = None
     google_client_id: str | None = None
 

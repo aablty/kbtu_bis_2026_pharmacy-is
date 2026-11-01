@@ -40,8 +40,7 @@ class CategoryRepository:
         self, category_id: int, *, include_self: bool = True
     ) -> list[int]:
         """IDs of category_id and every descendant, via a recursive CTE walking
-        parent_id downward. Reused by catalog search (category + subcategories)
-        and the future AI assistant's lookup tool - one code path, not two."""
+        parent_id downward. Reused by catalog search (category + subcategories)."""
         root = select(Category.category_id).where(Category.category_id == category_id)
         tree = root.cte(name="category_tree", recursive=True)
         children = aliased(Category)
