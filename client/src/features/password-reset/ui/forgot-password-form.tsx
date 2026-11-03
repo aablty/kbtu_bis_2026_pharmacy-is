@@ -3,11 +3,12 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
-import { authErrorKey } from "@/shared/api/errors";
+import { authEndpoints, authErrorKey } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
+import { FormErrorAlert } from "@/shared/ui/form-error-alert";
 import { Input } from "@/shared/ui/input";
+import { Spinner } from "@/shared/ui/spinner";
 import {
   type ForgotPasswordValues,
   forgotPasswordSchema,
@@ -50,12 +51,9 @@ export function ForgotPasswordForm() {
           />
           <FieldError errors={[errors.email]} />
         </Field>
-        {serverError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {serverError}
-          </p>
-        ) : null}
+        {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : null}
           {t("auth.forgot.submit")}
         </Button>
       </FieldGroup>

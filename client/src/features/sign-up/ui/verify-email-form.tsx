@@ -4,12 +4,13 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
-import { authErrorKey } from "@/shared/api/errors";
+import { authEndpoints, authErrorKey } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
+import { FormErrorAlert } from "@/shared/ui/form-error-alert";
 import { Input } from "@/shared/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/ui/input-otp";
+import { Spinner } from "@/shared/ui/spinner";
 import {
   type VerifyEmailValues,
   verifyEmailSchema,
@@ -84,12 +85,9 @@ export function VerifyEmailForm() {
           />
           <FieldError errors={[errors.code]} />
         </Field>
-        {serverError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {serverError}
-          </p>
-        ) : null}
+        {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : null}
           {t("auth.verify.submit")}
         </Button>
         <Button type="button" variant="ghost" onClick={onResend}>

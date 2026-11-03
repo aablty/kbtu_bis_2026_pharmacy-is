@@ -3,12 +3,14 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
-import { authErrorKey } from "@/shared/api/errors";
+import { authEndpoints, authErrorKey } from "@/shared/api";
 import { toApiLocale } from "@/shared/lib/locale";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
+import { FormErrorAlert } from "@/shared/ui/form-error-alert";
 import { Input } from "@/shared/ui/input";
+import { PasswordInput } from "@/shared/ui/password-input";
+import { Spinner } from "@/shared/ui/spinner";
 import { type SignUpValues, signUpSchema } from "../model/sign-up-schema";
 
 export function SignUpForm() {
@@ -55,21 +57,18 @@ export function SignUpForm() {
           <FieldLabel htmlFor="sign-up-password">
             {t("auth.password")}
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="sign-up-password"
-            type="password"
             autoComplete="new-password"
             aria-invalid={!!errors.password}
+            toggleLabel={t("auth.togglePassword")}
             {...form.register("password")}
           />
           <FieldError errors={[errors.password]} />
         </Field>
-        {serverError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {serverError}
-          </p>
-        ) : null}
+        {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : null}
           {t("auth.signUp.submit")}
         </Button>
         <div className="text-sm">

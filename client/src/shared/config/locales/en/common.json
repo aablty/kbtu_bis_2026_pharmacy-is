@@ -3,8 +3,43 @@
     "name": "PillPoint"
   },
   "home": {
-    "title": "Welcome to PillPoint",
-    "subtitle": "Your pharmacy, organized."
+    "title": "Run your pharmacy, not your paperwork.",
+    "subtitle": "PillPoint brings medicines, orders, prescriptions, and staff tools into one place for your whole team.",
+    "cta": {
+      "primary": "Create an account",
+      "secondary": "Sign in"
+    },
+    "features": [
+      {
+        "title": "Role-based access",
+        "description": "Separate tools for admins, pharmacists, cashiers, and customers."
+      },
+      {
+        "title": "Customer profiles",
+        "description": "Every customer keeps one account across orders and pickups."
+      },
+      {
+        "title": "Prescription uploads",
+        "description": "Customers upload prescriptions; pharmacists review and approve them."
+      },
+      {
+        "title": "Notifications",
+        "description": "Order status, prescription review, and low-stock alerts, in one inbox."
+      },
+      {
+        "title": "Orders and payment",
+        "description": "Place and pay for orders online, with stock reserved automatically."
+      },
+      {
+        "title": "Progress tracking",
+        "description": "Follow an order from placed to ready for pickup, step by step."
+      },
+      {
+        "title": "Admin analytics",
+        "description": "Best sellers, low stock, and revenue, at a glance."
+      }
+    ],
+    "footer": "PillPoint — pharmacy management, simplified."
   },
   "theme": {
     "label": "Theme",
@@ -80,6 +115,10 @@
       "userNotFound": "No account found for this email",
       "googleInvalid": "Google sign-in failed",
       "generic": "Something went wrong. Please try again"
-    }
+    },
+    "togglePassword": "Toggle password visibility"
+  },
+  "locale": {
+    "label": "Language"
   }
 }

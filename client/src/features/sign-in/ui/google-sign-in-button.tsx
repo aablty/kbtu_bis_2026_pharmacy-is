@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
-import { authErrorKey } from "@/shared/api/errors";
+import { authEndpoints, authErrorKey } from "@/shared/api";
 import { establishSession } from "@/shared/auth";
 
 interface GoogleCredentialResponse {

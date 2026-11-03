@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
+import { authEndpoints } from "@/shared/api";
 import { establishSession } from "@/shared/auth";
 import { i18n } from "@/shared/config";
 import { SignInForm } from "./sign-in-form";
@@ -57,5 +57,28 @@ describe("SignInForm", () => {
       email: "user@example.com",
       password: "correct-horse-1",
     });
+  });
+
+  it("offers a link to verify-email when the account isn't verified yet", async () => {
+    vi.mocked(authEndpoints.login).mockRejectedValue(
+      Object.assign(new Error("forbidden"), {
+        isAxiosError: true,
+        response: { status: 403, data: { detail: "Email not verified" } },
+      }),
+    );
+    renderForm();
+
+    await userEvent.type(
+      screen.getByLabelText("Email"),
+      "unverified@example.com",
+    );
+    await userEvent.type(screen.getByLabelText("Password"), "correct-horse-1");
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const link = await screen.findByRole("link", { name: "Verify your email" });
+    expect(link).toHaveAttribute(
+      "href",
+      "/verify-email?email=unverified%40example.com",
+    );
   });
 });
