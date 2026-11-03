@@ -34,3 +34,13 @@ services:
         sync: false
       - key: RESEND_FROM_NAME
         value: PillPoint
+  - type: web
+    name: pillpoint
+    runtime: static
+    rootDir: client
+    buildCommand: bun install && bun run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
