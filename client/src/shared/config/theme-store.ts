@@ -2,21 +2,22 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type Theme = "light" | "dark" | "system";
+export type ResolvedTheme = "light" | "dark";
 
 interface ThemeState {
   theme: Theme;
-  resolvedTheme: "light" | "dark";
+  resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
 }
 
-function resolveTheme(theme: Theme): "light" | "dark" {
+const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme !== "system") return theme;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return systemDarkQuery.matches ? "dark" : "light";
 }
 
-function applyTheme(resolvedTheme: "light" | "dark") {
+function applyTheme(resolvedTheme: ResolvedTheme) {
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
 }
 
@@ -33,9 +34,15 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: "pillpoint-theme",
+      partialize: (state) => ({ theme: state.theme }),
       onRehydrateStorage: () => (state) => {
-        if (state) applyTheme(resolveTheme(state.theme));
+        if (state) state.setTheme(state.theme);
       },
     },
   ),
 );
+
+systemDarkQuery.addEventListener("change", () => {
+  const { theme, setTheme } = useThemeStore.getState();
+  if (theme === "system") setTheme("system");
+});

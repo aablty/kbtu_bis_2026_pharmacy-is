@@ -5,5 +5,11 @@
   "home": {
     "title": "Welcome to PillPoint",
     "subtitle": "Your pharmacy, organized."
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   }
 }
