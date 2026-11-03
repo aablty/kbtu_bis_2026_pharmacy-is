@@ -11,5 +11,75 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New password",
+    "code": "Verification code",
+    "signIn": {
+      "title": "Sign in",
+      "submit": "Sign in"
+    },
+    "signUp": {
+      "title": "Create account",
+      "submit": "Sign up"
+    },
+    "verify": {
+      "title": "Verify your email",
+      "description": "Enter the 6-digit code we sent you.",
+      "submit": "Verify",
+      "resend": "Send a new code",
+      "resent": "A new code has been sent."
+    },
+    "forgot": {
+      "title": "Reset password",
+      "submit": "Send reset code"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "submit": "Reset password"
+    },
+    "links": {
+      "signIn": "Already have an account? Sign in",
+      "signUp": "Create an account",
+      "forgot": "Forgot password?"
+    },
+    "signOut": "Sign out",
+    "profile": {
+      "title": "Your account",
+      "role": "Role"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "pharmacist": "Pharmacist",
+      "cashier": "Cashier",
+      "customer": "Customer"
+    },
+    "staff": {
+      "title": "Staff area",
+      "description": "Staff tools will appear here."
+    },
+    "admin": {
+      "title": "Administration",
+      "description": "Admin tools will appear here."
+    },
+    "validation": {
+      "email": "Enter a valid email address",
+      "passwordMin": "Password must be at least 8 characters",
+      "required": "This field is required",
+      "code": "Enter the 6-digit code"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "emailNotVerified": "Verify your email before signing in",
+      "emailExists": "An account with this email already exists",
+      "invalidCode": "Incorrect code",
+      "codeExpired": "This code has expired. Request a new one",
+      "tooManyAttempts": "Too many attempts. Request a new code",
+      "userNotFound": "No account found for this email",
+      "googleInvalid": "Google sign-in failed",
+      "generic": "Something went wrong. Please try again"
+    }
   }
 }

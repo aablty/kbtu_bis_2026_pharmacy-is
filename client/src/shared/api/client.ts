@@ -2,6 +2,7 @@ import axios, { type AxiosRequestConfig } from "axios";
 import { refreshTokenStorage } from "@/shared/auth/refresh-token";
 import { useSessionStore } from "@/shared/auth/session-store";
 import i18n from "@/shared/config/i18n";
+import type { TokenPair } from "./auth-types";
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
@@ -16,13 +17,35 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshing: Promise<string> | null = null;
+let refreshing: Promise<TokenPair> | null = null;
+
+function refreshTokens(refreshToken: string): Promise<TokenPair> {
+  refreshing ??= axios
+    .post<TokenPair>(
+      `${apiClient.defaults.baseURL}/auth/refresh`,
+      { refresh_token: refreshToken },
+      { headers: { "Accept-Language": i18n.language } },
+    )
+    .then(({ data }) => {
+      refreshTokenStorage.set(data.refresh_token);
+      useSessionStore.getState().setAccessToken(data.access_token);
+      return data;
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { config, response } = error;
-    if (response?.status !== 401 || config._retried) {
+    if (
+      response?.status !== 401 ||
+      config._retried ||
+      config.url?.startsWith("/auth/")
+    ) {
       throw error;
     }
     config._retried = true;
@@ -33,21 +56,9 @@ apiClient.interceptors.response.use(
       throw error;
     }
 
-    refreshing ??= apiClient
-      .post("/auth/refresh", { refreshToken })
-      .then(({ data }) => {
-        refreshTokenStorage.set(data.refreshToken);
-        return data.accessToken as string;
-      })
-      .finally(() => {
-        refreshing = null;
-      });
-
     try {
-      const accessToken = await refreshing;
-      const { user } = useSessionStore.getState();
-      if (user) useSessionStore.getState().setSession(user, accessToken);
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      const tokens = await refreshTokens(refreshToken);
+      config.headers.Authorization = `Bearer ${tokens.access_token}`;
       return apiClient(config);
     } catch (refreshError) {
       useSessionStore.getState().clearSession();
@@ -61,3 +72,5 @@ apiClient.interceptors.response.use(
 // the plain data payload the generated types expect.
 export const apiMutator = <T>(config: AxiosRequestConfig): Promise<T> =>
   apiClient(config).then(({ data }) => data);
+
+export { refreshTokens };

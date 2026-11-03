@@ -1,27 +1,22 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-
-export interface SessionUser {
-  id: number;
-  email: string;
-  role: string;
-}
+import type { UserProfile } from "@/shared/api/auth-types";
 
 interface SessionState {
-  user: SessionUser | null;
+  user: UserProfile | null;
   accessToken: string | null;
-  setSession: (user: SessionUser, accessToken: string) => void;
+  setAccessToken: (accessToken: string) => void;
+  setUser: (user: UserProfile) => void;
   clearSession: () => void;
 }
 
-// Access token + user live in sessionStorage (cleared when the tab closes).
-// The refresh token is handled separately, in localStorage - see refresh-token.ts.
 export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
       user: null,
       accessToken: null,
-      setSession: (user, accessToken) => set({ user, accessToken }),
+      setAccessToken: (accessToken) => set({ accessToken }),
+      setUser: (user) => set({ user }),
       clearSession: () => set({ user: null, accessToken: null }),
     }),
     {
