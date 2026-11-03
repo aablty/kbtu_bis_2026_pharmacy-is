@@ -3,12 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { beforeEach, describe, expect, it } from "vitest";
 import { i18n, useThemeStore } from "@/shared/config";
+import { TooltipProvider } from "@/shared/ui/tooltip";
 import { ThemeToggle } from "./theme-toggle";
 
 function renderToggle() {
   return render(
     <I18nextProvider i18n={i18n}>
-      <ThemeToggle />
+      <TooltipProvider>
+        <ThemeToggle />
+      </TooltipProvider>
     </I18nextProvider>,
   );
 }

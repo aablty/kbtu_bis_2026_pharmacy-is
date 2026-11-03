@@ -11,13 +11,7 @@ import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Button } from "@/shared/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { TopBar } from "@/widgets/layout";
 
 const FEATURE_ICONS = [
@@ -46,7 +40,6 @@ function FeatureCard({
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent />
     </Card>
   );
 }

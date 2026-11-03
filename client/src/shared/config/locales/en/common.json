@@ -120,5 +120,8 @@
   },
   "locale": {
     "label": "Language"
+  },
+  "nav": {
+    "menu": "Menu"
   }
 }
