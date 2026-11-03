@@ -28,11 +28,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: SMTP_HOST
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_USERNAME
+      - key: RESEND_FROM_EMAIL
         sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_PORT
-        value: "587"
+      - key: RESEND_FROM_NAME
+        value: PillPoint
