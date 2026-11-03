@@ -1,13 +1,23 @@
 import { useTranslation } from "react-i18next";
-import { AuthCardLayout } from "@/shared/ui/auth-card-layout";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/shared/ui/empty";
+import { AppShell } from "@/widgets/layout";
 
 export function StaffPage() {
   const { t } = useTranslation();
 
   return (
-    <AuthCardLayout
-      title={t("auth.staff.title")}
-      description={t("auth.staff.description")}
-    />
+    <AppShell>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>{t("auth.staff.title")}</EmptyTitle>
+          <EmptyDescription>{t("auth.staff.description")}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </AppShell>
   );
 }

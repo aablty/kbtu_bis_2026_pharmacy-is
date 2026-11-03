@@ -3,18 +3,20 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
-import { authEndpoints } from "@/shared/api/auth-endpoints";
-import { authErrorKey } from "@/shared/api/errors";
+import { type AuthErrorKey, authEndpoints, authErrorKey } from "@/shared/api";
 import { establishSession } from "@/shared/auth";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
+import { FormErrorAlert } from "@/shared/ui/form-error-alert";
 import { Input } from "@/shared/ui/input";
+import { PasswordInput } from "@/shared/ui/password-input";
+import { Spinner } from "@/shared/ui/spinner";
 import { type SignInValues, signInSchema } from "../model/sign-in-schema";
 
 export function SignInForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<AuthErrorKey | null>(null);
   const schema = useMemo(() => signInSchema(t), [t]);
   const form = useForm<SignInValues>({
     resolver: zodResolver(schema),
@@ -29,7 +31,7 @@ export function SignInForm() {
       await establishSession(tokens);
       navigate("/profile", { replace: true });
     } catch (error) {
-      setServerError(t(authErrorKey(error)));
+      setServerError(authErrorKey(error));
     }
   }
 
@@ -51,21 +53,32 @@ export function SignInForm() {
           <FieldLabel htmlFor="sign-in-password">
             {t("auth.password")}
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="sign-in-password"
-            type="password"
             autoComplete="current-password"
             aria-invalid={!!errors.password}
+            toggleLabel={t("auth.togglePassword")}
             {...form.register("password")}
           />
           <FieldError errors={[errors.password]} />
         </Field>
         {serverError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {serverError}
-          </p>
+          <FormErrorAlert>
+            {t(serverError)}
+            {serverError === "auth.errors.emailNotVerified" ? (
+              <>
+                {" "}
+                <Link
+                  to={`/verify-email?email=${encodeURIComponent(form.getValues("email"))}`}
+                >
+                  {t("auth.verify.title")}
+                </Link>
+              </>
+            ) : null}
+          </FormErrorAlert>
         ) : null}
         <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : null}
           {t("auth.signIn.submit")}
         </Button>
         <div className="flex flex-wrap justify-between gap-2 text-sm">

@@ -1,0 +1,53 @@
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} aria-hidden="true">
+      <defs>
+        <linearGradient
+          id="pillpoint-mark-a"
+          x1="17.73"
+          x2="65.95"
+          y1="12.21"
+          y2="50.73"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#1EECD7" offset="0" />
+          <stop stopColor="#11C7BE" offset=".3542" />
+          <stop stopColor="#0CAFAF" offset=".6927" />
+          <stop stopColor="#07989D" offset="1" />
+        </linearGradient>
+        <linearGradient
+          id="pillpoint-mark-b"
+          x1="27.22"
+          x2="41.83"
+          y1="33.82"
+          y2="52.08"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#18DCCB" offset="0" />
+          <stop stopColor="#10BDB6" offset=".5417" />
+          <stop stopColor="#05949A" offset="1" />
+        </linearGradient>
+      </defs>
+      <path
+        d="m39.87 0.73c-16.61 0-31.05 13.46-31.05 31.82 0 6.66 2.14 12.55 6.11 18.11 6.67 9.56 18.87 21.83 23.58 26.36 0.51 0.49 1.04 0.66 1.56 0.66 0.58 0 1.07-0.22 1.56-0.71 4.77-4.88 16.86-17.06 22.97-25.23 4.17-5.56 6.58-11.47 6.58-18.34 0-18.94-14.47-32.67-31.31-32.67zm17.95 34.91-18.3 18.32c-2.27 2.28-5.34 3.71-8.55 3.71-6.56-0.06-12.05-5.58-12.05-12.45 0-3.39 1.35-6.51 3.72-8.84l18.31-18.3c2.37-2.36 5.57-3.72 8.75-3.72 6.64 0 12.04 5.39 12.04 12.1 0 3.59-1.49 6.83-3.92 9.18z"
+        fill="url(#pillpoint-mark-a)"
+      />
+      <path
+        d="m35.9 29.59c-0.61-0.57-1.62-0.55-2.22 0.02l-9.26 9.08c-1.73 1.72-2.65 4-2.65 6.57 0 5.67 4.72 9.91 9.82 9.91 2.54 0 5.06-1.04 6.78-2.79l9.36-9.25c0.42-0.41 0.42-1-0.01-1.43l-11.82-12.11z"
+        fill="url(#pillpoint-mark-b)"
+      />
+      <circle cx="39.11" cy="53.14" r=".2855" fill="#080604" />
+      <circle cx="40.02" cy="52.24" r=".2855" fill="#080604" />
+      <circle cx="40.92" cy="51.33" r=".2855" fill="#080604" />
+    </svg>
+  );
+}
+
+export function AppLogo({ className }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
+      <LogoMark className="size-7" />
+      <span className="font-heading text-lg font-semibold">PillPoint</span>
+    </span>
+  );
+}

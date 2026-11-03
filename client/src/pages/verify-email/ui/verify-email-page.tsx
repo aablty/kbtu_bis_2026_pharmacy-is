@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { VerifyEmailForm } from "@/features/sign-up";
-import { AuthCardLayout } from "@/shared/ui/auth-card-layout";
+import { AuthCardLayout } from "@/widgets/layout";
 
 export function VerifyEmailPage() {
   const { t } = useTranslation();

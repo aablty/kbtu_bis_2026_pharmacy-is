@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router";
-import type { UserRole } from "@/shared/api/auth-types";
+import type { UserRole } from "@/shared/api";
 import { useSessionStore } from "@/shared/auth";
 
 export function RequireAuth({ roles }: { roles?: readonly UserRole[] }) {
