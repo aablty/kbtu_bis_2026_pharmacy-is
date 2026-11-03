@@ -28,6 +28,7 @@ export function PasswordInput({
       <InputGroupAddon align="inline-end">
         <InputGroupButton
           type="button"
+          size="icon-sm"
           aria-label={toggleLabel}
           aria-pressed={visible}
           onClick={() => setVisible((v) => !v)}

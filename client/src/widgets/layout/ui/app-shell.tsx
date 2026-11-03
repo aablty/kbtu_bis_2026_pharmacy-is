@@ -14,8 +14,8 @@ function NavItem({ to, label }: { to: string; label: string }) {
       to={to}
       className={({ isActive }) =>
         cn(
-          "text-sm font-medium text-muted-foreground hover:text-foreground",
-          isActive && "text-foreground underline underline-offset-4",
+          "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+          isActive && "bg-primary/10 text-primary hover:bg-primary/10",
         )
       }
     >

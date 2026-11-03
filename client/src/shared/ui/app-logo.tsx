@@ -1,3 +1,5 @@
+import { cn } from "cn";
+
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 80 80" className={className} aria-hidden="true">
@@ -45,7 +47,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function AppLogo({ className }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
+    <span className={cn("inline-flex items-center gap-2", className)}>
       <LogoMark className="size-7" />
       <span className="font-heading text-lg font-semibold">PillPoint</span>
     </span>
