@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { ThemeToggle } from "@/features/toggle-theme";
 import { Button } from "@/shared/ui/button";
 
@@ -12,7 +13,14 @@ export function HomePage() {
       </div>
       <h1 className="font-heading text-4xl font-semibold">{t("home.title")}</h1>
       <p className="text-muted-foreground">{t("home.subtitle")}</p>
-      <Button>{t("app.name")}</Button>
+      <div className="flex gap-2">
+        <Button asChild>
+          <Link to="/sign-in">{t("auth.links.signIn")}</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/sign-up">{t("auth.links.signUp")}</Link>
+        </Button>
+      </div>
     </main>
   );
 }
