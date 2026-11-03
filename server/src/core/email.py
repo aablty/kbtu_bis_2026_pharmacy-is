@@ -1,7 +1,9 @@
+import html
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import httpx
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from src.core.config import get_settings
@@ -9,6 +11,7 @@ from src.core.config import get_settings
 logger = logging.getLogger("pharmacy.email")
 
 _TEMPLATE_FOLDER = Path(__file__).resolve().parents[1] / "templates"
+_RESEND_URL = "https://api.resend.com/emails"
 
 
 class EmailSender(ABC):
@@ -74,7 +77,39 @@ class SmtpEmailSender(EmailSender):
         await self._fm.send_message(message, template_name="email_base.html")
 
 
+class ResendEmailSender(EmailSender):
+    """Delivery over Resend's HTTPS API (port 443), so it works on hosts that
+    block outbound SMTP (Render free). Sends a plain paragraph wrapped in html;
+    the body is escaped, so OTP text can't inject markup."""
+
+    def __init__(self, api_key: str, from_email: str, from_name: str) -> None:
+        self._api_key = api_key
+        self._from_email = from_email
+        self._from_name = from_name
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(
+                _RESEND_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "from": f"{self._from_name} <{self._from_email}>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": f"<p>{html.escape(body)}</p>",
+                },
+            )
+        response.raise_for_status()
+
+
 def get_email_sender() -> EmailSender:
-    if get_settings().smtp_host:
+    settings = get_settings()
+    if settings.resend_api_key:
+        return ResendEmailSender(
+            settings.resend_api_key,
+            settings.resend_from_email,
+            settings.resend_from_name,
+        )
+    if settings.smtp_host:
         return SmtpEmailSender()
     return ConsoleEmailSender()

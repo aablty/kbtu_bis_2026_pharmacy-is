@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
 
+    resend_api_key: str | None = None
+    resend_from_email: str = "onboarding@resend.dev"
+    resend_from_name: str = "PillPoint"
+
 
 @lru_cache
 def get_settings() -> Settings:
