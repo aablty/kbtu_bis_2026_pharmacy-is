@@ -53,6 +53,16 @@ async def register(
     return RegisterResponse(user_id=user.user_id, email=user.email)
 
 
+@router.post("/resend-verification", response_model=MessageResponse)
+async def resend_verification(
+    payload: ForgotPasswordRequest, auth_service: AuthServiceDep
+) -> MessageResponse:
+    await auth_service.resend_verification(payload.email)
+    return MessageResponse(
+        message="If that email is awaiting verification, a new code has been sent."
+    )
+
+
 @router.post("/verify-email", response_model=MessageResponse)
 async def verify_email(
     payload: VerifyEmailRequest, auth_service: AuthServiceDep

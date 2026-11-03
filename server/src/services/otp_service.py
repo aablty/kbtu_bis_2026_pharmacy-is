@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from src.models.otp import OtpCode
 from src.repositories.otp_repository import OtpRepository
 
 settings = get_settings()
+logger = logging.getLogger("pharmacy.otp")
 
 _SUBJECTS = {
     OtpPurpose.EMAIL_VERIFICATION: "Verify your email",
@@ -65,11 +67,17 @@ class OtpService:
         self._repo.add(otp)
         await self._session.flush()
 
-        await self._email_sender.send(
-            to=destination,
-            subject=_SUBJECTS[purpose],
-            body=f"Your verification code is {code}. It expires in {settings.otp_ttl_minutes} minutes.",
-        )
+        try:
+            await self._email_sender.send(
+                to=destination,
+                subject=_SUBJECTS[purpose],
+                body=f"Your verification code is {code}. It expires in {settings.otp_ttl_minutes} minutes.",
+            )
+        except Exception:
+            # The code row is still committed by the caller; a failed send must
+            # not roll back registration or password reset. The user can request
+            # a new code once the cooldown passes.
+            logger.exception("OTP email delivery failed (purpose=%s)", purpose.value)
         return otp
 
     async def verify(

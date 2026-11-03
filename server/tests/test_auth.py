@@ -3,8 +3,15 @@ import uuid
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.email import EmailSender, get_email_sender
+from src.main import app
 from src.repositories.user_repository import UserRepository
 from tests.conftest import RecordingEmailSender
+
+
+class _FailingEmailSender(EmailSender):
+    async def send(self, to: str, subject: str, body: str) -> None:
+        raise RuntimeError("email transport down")
 
 
 def unique_email() -> str:
@@ -21,6 +28,19 @@ async def _register_and_verify(
 
     code = email_sender.last_code_for(email)
     resp = await client.post("/auth/verify-email", json={"email": email, "code": code})
+    assert resp.status_code == 200, resp.text
+
+
+async def test_register_succeeds_when_email_delivery_fails(client: AsyncClient) -> None:
+    app.dependency_overrides[get_email_sender] = lambda: _FailingEmailSender()
+    email = unique_email()
+
+    resp = await client.post(
+        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+    )
+    assert resp.status_code == 201, resp.text
+
+    resp = await client.post("/auth/resend-verification", json={"email": email})
     assert resp.status_code == 200, resp.text
 
 

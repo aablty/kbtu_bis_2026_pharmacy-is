@@ -1,10 +1,10 @@
-import html
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import httpx
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.core.config import get_settings
 
@@ -12,6 +12,10 @@ logger = logging.getLogger("pharmacy.email")
 
 _TEMPLATE_FOLDER = Path(__file__).resolve().parents[1] / "templates"
 _RESEND_URL = "https://api.resend.com/emails"
+_templates = Environment(
+    loader=FileSystemLoader(_TEMPLATE_FOLDER),
+    autoescape=select_autoescape(["html"]),
+)
 
 
 class EmailSender(ABC):
@@ -79,8 +83,8 @@ class SmtpEmailSender(EmailSender):
 
 class ResendEmailSender(EmailSender):
     """Delivery over Resend's HTTPS API (port 443), so it works on hosts that
-    block outbound SMTP (Render free). Sends a plain paragraph wrapped in html;
-    the body is escaped, so OTP text can't inject markup."""
+    block outbound SMTP (Render free). Renders email_base.html, the same shell
+    SmtpEmailSender uses, with autoescaping on so OTP text can't inject markup."""
 
     def __init__(self, api_key: str, from_email: str, from_name: str) -> None:
         self._api_key = api_key
@@ -88,6 +92,9 @@ class ResendEmailSender(EmailSender):
         self._from_name = from_name
 
     async def send(self, to: str, subject: str, body: str) -> None:
+        rendered = _templates.get_template("email_base.html").render(
+            subject=subject, body=body
+        )
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(
                 _RESEND_URL,
@@ -96,7 +103,7 @@ class ResendEmailSender(EmailSender):
                     "from": f"{self._from_name} <{self._from_email}>",
                     "to": [to],
                     "subject": subject,
-                    "html": f"<p>{html.escape(body)}</p>",
+                    "html": rendered,
                 },
             )
         response.raise_for_status()
@@ -105,6 +112,10 @@ class ResendEmailSender(EmailSender):
 def get_email_sender() -> EmailSender:
     settings = get_settings()
     if settings.resend_api_key:
+        if not settings.resend_from_email:
+            raise RuntimeError(
+                "RESEND_FROM_EMAIL is required when RESEND_API_KEY is set"
+            )
         return ResendEmailSender(
             settings.resend_api_key,
             settings.resend_from_email,
@@ -112,4 +123,4 @@ def get_email_sender() -> EmailSender:
         )
     if settings.smtp_host:
         return SmtpEmailSender()
-    return ConsoleEmailSender()
+    raise RuntimeError("No email transport configured: set RESEND_API_KEY or SMTP_HOST")

@@ -6,7 +6,6 @@ import httpx
 import pytest
 
 from src.core.email import (
-    ConsoleEmailSender,
     ResendEmailSender,
     SmtpEmailSender,
     get_email_sender,
@@ -22,7 +21,7 @@ class _FakeSettings:
         smtp_password: str | None = None,
         smtp_port: int = 587,
         resend_api_key: str | None = None,
-        resend_from_email: str = "onboarding@resend.dev",
+        resend_from_email: str | None = "noreply@example.com",
         resend_from_name: str = "PillPoint",
     ) -> None:
         self.smtp_host = smtp_host
@@ -79,12 +78,33 @@ async def test_resend_sender_posts_expected_payload(
     request = captured[0]
     assert str(request.url) == "https://api.resend.com/emails"
     assert request.headers["Authorization"] == "Bearer re_test"
-    assert json.loads(request.content) == {
-        "from": "PillPoint <noreply@example.com>",
-        "to": ["user@example.com"],
-        "subject": "Verify your email",
-        "html": "<p>Code 123456 &lt;b&gt;</p>",
-    }
+    payload = json.loads(request.content)
+    assert payload["from"] == "PillPoint <noreply@example.com>"
+    assert payload["to"] == ["user@example.com"]
+    assert payload["subject"] == "Verify your email"
+    assert "<h2" in payload["html"]
+    assert "Verify your email</h2>" in payload["html"]
+    assert "Code 123456 &lt;b&gt;" in payload["html"]
+    assert "<b>" not in payload["html"]
+
+
+async def test_resend_sender_escapes_subject(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(200, json={"id": "email_2"})
+
+    _mock_http(monkeypatch, handler)
+    sender = ResendEmailSender("re_test", "noreply@example.com", "PillPoint")
+
+    await sender.send("user@example.com", "<img src=x>", "Code 123456")
+
+    payload = json.loads(captured[0].content)
+    assert "<img src=x>" not in payload["html"]
+    assert "&lt;img src=x&gt;" in payload["html"]
 
 
 async def test_resend_sender_raises_on_error_status(
@@ -100,11 +120,23 @@ async def test_resend_sender_raises_on_error_status(
         await sender.send("user@example.com", "Subject", "Body")
 
 
-def test_get_email_sender_falls_back_to_console_without_smtp_host(
+def test_get_email_sender_fails_when_no_transport_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("src.core.email.get_settings", lambda: _FakeSettings())
-    assert isinstance(get_email_sender(), ConsoleEmailSender)
+    with pytest.raises(RuntimeError):
+        get_email_sender()
+
+
+def test_get_email_sender_fails_when_resend_has_no_from_address(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "src.core.email.get_settings",
+        lambda: _FakeSettings(resend_api_key="re_test", resend_from_email=None),
+    )
+    with pytest.raises(RuntimeError):
+        get_email_sender()
 
 
 def test_get_email_sender_returns_smtp_sender_when_configured(

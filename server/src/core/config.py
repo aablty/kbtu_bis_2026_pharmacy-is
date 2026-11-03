@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
 
     resend_api_key: str | None = None
-    resend_from_email: str = "onboarding@resend.dev"
+    resend_from_email: str | None = None
     resend_from_name: str = "PillPoint"
 
 

@@ -11,6 +11,7 @@ from src.core.windows_event_loop import use_selector_event_loop_on_windows
 use_selector_event_loop_on_windows()
 
 from src.core.config import get_settings
+from src.core.email import get_email_sender
 from src.core.scheduler import build_scheduler
 from src.routers import (
     analytics,
@@ -30,6 +31,7 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    get_email_sender()
     scheduler = build_scheduler()
     scheduler.start()
     try:

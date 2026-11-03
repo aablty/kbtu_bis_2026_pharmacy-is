@@ -8,6 +8,7 @@ from src.core.exceptions import (
     EmailAlreadyRegisteredError,
     EmailNotVerifiedError,
     InvalidCredentialsError,
+    OtpCooldownError,
     UserNotFoundError,
 )
 from src.core.google_oauth import verify_google_id_token
@@ -51,6 +52,18 @@ class AuthService:
         )
         await self._session.commit()
         return user
+
+    async def resend_verification(self, email: str) -> None:
+        user = await self._users.get_by_email(email)
+        if user is None or user.email_verified_at is not None:
+            return
+        try:
+            await self._otp.issue(
+                OtpPurpose.EMAIL_VERIFICATION, email, user_id=user.user_id
+            )
+        except OtpCooldownError:
+            return
+        await self._session.commit()
 
     async def verify_email(self, email: str, code: str) -> User:
         user = await self._users.get_by_email(email)
