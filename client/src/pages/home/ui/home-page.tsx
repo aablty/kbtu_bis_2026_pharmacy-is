@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
+import { useSessionStore } from "@/shared/auth";
 import { Button } from "@/shared/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { TopBar } from "@/widgets/layout";
@@ -46,10 +47,15 @@ function FeatureCard({
 
 export function HomePage() {
   const { t } = useTranslation();
+  const user = useSessionStore((state) => state.user);
   const features = t("home.features", { returnObjects: true }) as {
     title: string;
     description: string;
   }[];
+
+  if (user) {
+    return <Navigate to="/profile" replace />;
+  }
 
   return (
     <div className="flex min-h-svh flex-col">

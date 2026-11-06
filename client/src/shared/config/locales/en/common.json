@@ -103,7 +103,8 @@
       "email": "Enter a valid email address",
       "passwordMin": "Password must be at least 8 characters",
       "required": "This field is required",
-      "code": "Enter the 6-digit code"
+      "code": "Enter the 6-digit code",
+      "fullNameMax": "Full name must be at most 120 characters"
     },
     "errors": {
       "invalidCredentials": "Invalid email or password",
@@ -116,7 +117,8 @@
       "googleInvalid": "Google sign-in failed",
       "generic": "Something went wrong. Please try again"
     },
-    "togglePassword": "Toggle password visibility"
+    "togglePassword": "Toggle password visibility",
+    "fullName": "Full name"
   },
   "locale": {
     "label": "Language"

@@ -14,6 +14,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
+    # Nullable - older rows predate this column, and a Google account without
+    # a "name" claim has nothing to backfill it with.
+    full_name: Mapped[str | None] = mapped_column(String(120))
     # Nullable - a Google-only account has no password until it sets one via
     # the normal forgot-password flow.
     password_hash: Mapped[str | None] = mapped_column(String(255))

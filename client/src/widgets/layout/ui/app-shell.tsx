@@ -2,8 +2,8 @@ import { cn } from "cn";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
-import { SignOutButton } from "@/features/sign-out";
 import { useSessionStore } from "@/shared/auth";
+import { AccountMenu } from "./account-menu";
 import { TopBar } from "./top-bar";
 
 const STAFF_ROLES = ["admin", "pharmacist", "cashier"] as const;
@@ -34,10 +34,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <TopBar>
-        <NavItem to="/profile" label={t("auth.profile.title")} />
         {isStaff ? <NavItem to="/staff" label={t("auth.staff.title")} /> : null}
         {isAdmin ? <NavItem to="/admin" label={t("auth.admin.title")} /> : null}
-        <SignOutButton />
+        {user ? <AccountMenu user={user} /> : null}
       </TopBar>
       <main className="mx-auto w-full max-w-5xl flex-1 p-4">{children}</main>
     </div>

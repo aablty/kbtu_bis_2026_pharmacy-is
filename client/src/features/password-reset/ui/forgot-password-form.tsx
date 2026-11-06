@@ -47,9 +47,10 @@ export function ForgotPasswordForm() {
             type="email"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "forgot-email-error" : undefined}
             {...form.register("email")}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError id="forgot-email-error" errors={[errors.email]} />
         </Field>
         {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>

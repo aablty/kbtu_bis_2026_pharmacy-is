@@ -45,7 +45,9 @@ async def test_google_login_creates_new_customer_account(
     email = unique_email()
     monkeypatch.setattr(
         "src.services.auth_service.verify_google_id_token",
-        _fake_verify(GoogleIdentity(sub="google-sub-new", email=email)),
+        _fake_verify(
+            GoogleIdentity(sub="google-sub-new", email=email, name="New Customer")
+        ),
     )
 
     resp = await client.post("/auth/google", json={"id_token": "whatever"})
@@ -59,6 +61,27 @@ async def test_google_login_creates_new_customer_account(
     assert resp.status_code == 200
     assert resp.json()["email"] == email
     assert resp.json()["role"] == "customer"
+    assert resp.json()["full_name"] == "New Customer"
+
+
+async def test_google_login_creates_account_without_name_claim(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    email = unique_email()
+    monkeypatch.setattr(
+        "src.services.auth_service.verify_google_id_token",
+        _fake_verify(GoogleIdentity(sub="google-sub-no-name", email=email)),
+    )
+
+    resp = await client.post("/auth/google", json={"id_token": "whatever"})
+    assert resp.status_code == 200, resp.text
+    tokens = resp.json()
+
+    resp = await client.get(
+        "/users/me", headers={"Authorization": f"Bearer {tokens['access_token']}"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["full_name"] is None
 
 
 async def test_google_login_links_existing_email_password_account(
@@ -68,7 +91,8 @@ async def test_google_login_links_existing_email_password_account(
 ) -> None:
     email = unique_email()
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+        "/auth/register",
+        json={"email": email, "password": "correct-horse-1", "full_name": "Test User"},
     )
     assert resp.status_code == 201
     code = email_sender.last_code_for(email)

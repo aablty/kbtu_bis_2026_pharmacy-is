@@ -13,5 +13,16 @@ export const passwordField = (t: TFunction) =>
 export const requiredField = (t: TFunction) =>
   z.string().min(1, { error: t("auth.validation.required") });
 
+export const fullNameField = (t: TFunction) =>
+  z
+    .string()
+    .trim()
+    .pipe(
+      z
+        .string()
+        .min(1, { error: t("auth.validation.required") })
+        .max(120, { error: t("auth.validation.fullNameMax") }),
+    );
+
 export const codeField = (t: TFunction) =>
   z.string().length(6, { error: t("auth.validation.code") });

@@ -16,7 +16,13 @@ class _NormalizesEmail(BaseModel):
 class RegisterRequest(_NormalizesEmail):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(min_length=1, max_length=120)
     preferred_locale: Locale = Locale.EN
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def _strip_full_name(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v
 
 
 class RegisterResponse(BaseModel):
@@ -66,6 +72,7 @@ class MessageResponse(BaseModel):
 class UserProfile(BaseModel):
     user_id: int
     email: EmailStr
+    full_name: str | None
     role: UserRole
     preferred_locale: Locale
     is_active: bool

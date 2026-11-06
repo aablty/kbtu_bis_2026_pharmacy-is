@@ -11,6 +11,7 @@ export const authEndpoints = {
   register: (body: {
     email: string;
     password: string;
+    full_name: string;
     preferred_locale: Locale;
   }) =>
     apiClient

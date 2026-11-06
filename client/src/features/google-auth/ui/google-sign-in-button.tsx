@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { authEndpoints, authErrorKey } from "@/shared/api";
 import { establishSession } from "@/shared/auth";
+import { useThemeStore } from "@/shared/config";
 
 interface GoogleCredentialResponse {
   credential: string;
@@ -51,13 +52,18 @@ export function GoogleSignInButton() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+
+  // Loads the script and registers the callback once; does not depend on
+  // resolvedTheme, so toggling the theme doesn't re-initialize GIS.
   useEffect(() => {
     const clientId = GOOGLE_CLIENT_ID;
     if (!clientId) return;
     let cancelled = false;
     loadGoogleIdentity()
       .then(() => {
-        if (cancelled || !window.google || !containerRef.current) return;
+        if (cancelled || !window.google) return;
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: async ({ credential }) => {
@@ -73,11 +79,7 @@ export function GoogleSignInButton() {
             }
           },
         });
-        window.google.accounts.id.renderButton(containerRef.current, {
-          theme: "outline",
-          size: "large",
-          width: 320,
-        });
+        setReady(true);
       })
       .catch(() => setError(t("auth.errors.generic")));
     return () => {
@@ -85,11 +87,24 @@ export function GoogleSignInButton() {
     };
   }, [navigate, t]);
 
+  // Re-renders Google's own button to match the resolved theme, without
+  // touching initialize().
+  useEffect(() => {
+    if (!ready || !window.google || !containerRef.current) return;
+    containerRef.current.replaceChildren();
+    window.google.accounts.id.renderButton(containerRef.current, {
+      theme: resolvedTheme === "dark" ? "filled_black" : "outline",
+      size: "large",
+      shape: "pill",
+      width: containerRef.current.offsetWidth || 320,
+    });
+  }, [ready, resolvedTheme]);
+
   if (!GOOGLE_CLIENT_ID) return null;
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div ref={containerRef} />
+      <div ref={containerRef} className="w-full" />
       {error ? (
         <p role="alert" className="text-destructive text-sm">
           {error}

@@ -1,9 +1,15 @@
 import type { TFunction } from "i18next";
 import { z } from "zod";
-import { codeField, emailField, passwordField } from "@/shared/lib/validation";
+import {
+  codeField,
+  emailField,
+  fullNameField,
+  passwordField,
+} from "@/shared/lib/validation";
 
 export const signUpSchema = (t: TFunction) =>
   z.object({
+    fullName: fullNameField(t),
     email: emailField(t),
     password: passwordField(t),
   });

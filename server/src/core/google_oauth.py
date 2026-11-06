@@ -13,6 +13,7 @@ _google_request = google_requests.Request()
 class GoogleIdentity:
     sub: str
     email: str
+    name: str | None = None
 
 
 def verify_google_id_token(token: str) -> GoogleIdentity:
@@ -35,4 +36,6 @@ def verify_google_id_token(token: str) -> GoogleIdentity:
     if not claims.get("email_verified", False):
         raise GoogleTokenInvalidError("Google account email is not verified")
 
-    return GoogleIdentity(sub=claims["sub"], email=claims["email"])
+    return GoogleIdentity(
+        sub=claims["sub"], email=claims["email"], name=claims.get("name")
+    )

@@ -11,6 +11,7 @@ export interface TokenPair {
 export interface UserProfile {
   user_id: number;
   email: string;
+  full_name: string | null;
   role: UserRole;
   preferred_locale: Locale;
   is_active: boolean;

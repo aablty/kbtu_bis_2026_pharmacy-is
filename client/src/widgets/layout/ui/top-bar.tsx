@@ -27,7 +27,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
 
         <nav className="hidden flex-1 items-center justify-end gap-4 md:flex">
           {children}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <LocaleToggle />
             <ThemeToggle />
           </div>
@@ -54,7 +54,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
               <SheetClose asChild>
                 <div className="flex flex-col gap-3">{children}</div>
               </SheetClose>
-              <div className="flex items-center gap-1 border-t pt-4">
+              <div className="flex items-center gap-2 border-t pt-4">
                 <LocaleToggle />
                 <ThemeToggle />
               </div>

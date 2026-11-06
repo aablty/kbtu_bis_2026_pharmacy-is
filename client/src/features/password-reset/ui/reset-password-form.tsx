@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -49,12 +50,14 @@ export function ResetPasswordForm() {
           <FieldLabel htmlFor="reset-email">{t("auth.email")}</FieldLabel>
           <Input
             id="reset-email"
+            readOnly
             type="email"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "reset-email-error" : undefined}
             {...form.register("email")}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError id="reset-email-error" errors={[errors.email]} />
         </Field>
         <Field data-invalid={!!errors.code}>
           <FieldLabel>{t("auth.code")}</FieldLabel>
@@ -64,9 +67,11 @@ export function ResetPasswordForm() {
             render={({ field }) => (
               <InputOTP
                 maxLength={6}
+                pattern={REGEXP_ONLY_DIGITS}
                 value={field.value}
                 onChange={field.onChange}
                 aria-invalid={!!errors.code}
+                aria-describedby={errors.code ? "reset-code-error" : undefined}
               >
                 <InputOTPGroup>
                   {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -76,7 +81,7 @@ export function ResetPasswordForm() {
               </InputOTP>
             )}
           />
-          <FieldError errors={[errors.code]} />
+          <FieldError id="reset-code-error" errors={[errors.code]} />
         </Field>
         <Field data-invalid={!!errors.new_password}>
           <FieldLabel htmlFor="reset-password">
@@ -86,10 +91,16 @@ export function ResetPasswordForm() {
             id="reset-password"
             autoComplete="new-password"
             aria-invalid={!!errors.new_password}
+            aria-describedby={
+              errors.new_password ? "reset-password-error" : undefined
+            }
             toggleLabel={t("auth.togglePassword")}
             {...form.register("new_password")}
           />
-          <FieldError errors={[errors.new_password]} />
+          <FieldError
+            id="reset-password-error"
+            errors={[errors.new_password]}
+          />
         </Field>
         {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>

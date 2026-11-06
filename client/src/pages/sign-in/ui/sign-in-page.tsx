@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { GoogleSignInButton, SignInForm } from "@/features/sign-in";
+import { GoogleSignInButton } from "@/features/google-auth";
+import { SignInForm } from "@/features/sign-in";
 import { AuthCardLayout } from "@/widgets/layout";
 
 export function SignInPage() {

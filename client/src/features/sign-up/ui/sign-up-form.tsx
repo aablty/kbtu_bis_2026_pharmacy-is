@@ -20,7 +20,7 @@ export function SignUpForm() {
   const schema = useMemo(() => signUpSchema(t), [t]);
   const form = useForm<SignUpValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { fullName: "", email: "", password: "" },
   });
   const { errors, isSubmitting } = form.formState;
 
@@ -28,7 +28,9 @@ export function SignUpForm() {
     setServerError(null);
     try {
       await authEndpoints.register({
-        ...values,
+        email: values.email,
+        password: values.password,
+        full_name: values.fullName,
         preferred_locale: toApiLocale(i18n.language),
       });
       navigate(`/verify-email?email=${encodeURIComponent(values.email)}`, {
@@ -42,6 +44,21 @@ export function SignUpForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
+        <Field data-invalid={!!errors.fullName}>
+          <FieldLabel htmlFor="sign-up-full-name">
+            {t("auth.fullName")}
+          </FieldLabel>
+          <Input
+            id="sign-up-full-name"
+            autoComplete="name"
+            aria-invalid={!!errors.fullName}
+            aria-describedby={
+              errors.fullName ? "sign-up-full-name-error" : undefined
+            }
+            {...form.register("fullName")}
+          />
+          <FieldError id="sign-up-full-name-error" errors={[errors.fullName]} />
+        </Field>
         <Field data-invalid={!!errors.email}>
           <FieldLabel htmlFor="sign-up-email">{t("auth.email")}</FieldLabel>
           <Input
@@ -49,9 +66,10 @@ export function SignUpForm() {
             type="email"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "sign-up-email-error" : undefined}
             {...form.register("email")}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError id="sign-up-email-error" errors={[errors.email]} />
         </Field>
         <Field data-invalid={!!errors.password}>
           <FieldLabel htmlFor="sign-up-password">
@@ -61,17 +79,20 @@ export function SignUpForm() {
             id="sign-up-password"
             autoComplete="new-password"
             aria-invalid={!!errors.password}
+            aria-describedby={
+              errors.password ? "sign-up-password-error" : undefined
+            }
             toggleLabel={t("auth.togglePassword")}
             {...form.register("password")}
           />
-          <FieldError errors={[errors.password]} />
+          <FieldError id="sign-up-password-error" errors={[errors.password]} />
         </Field>
         {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? <Spinner /> : null}
           {t("auth.signUp.submit")}
         </Button>
-        <div className="text-sm">
+        <div className="text-sm text-center text-muted-foreground">
           <Link className="underline" to="/sign-in">
             {t("auth.links.signIn")}
           </Link>

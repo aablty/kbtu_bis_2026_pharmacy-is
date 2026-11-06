@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -59,9 +60,10 @@ export function VerifyEmailForm() {
             type="email"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "verify-email-error" : undefined}
             {...form.register("email")}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError id="verify-email-error" errors={[errors.email]} />
         </Field>
         <Field data-invalid={!!errors.code}>
           <FieldLabel>{t("auth.code")}</FieldLabel>
@@ -71,9 +73,11 @@ export function VerifyEmailForm() {
             render={({ field }) => (
               <InputOTP
                 maxLength={6}
+                pattern={REGEXP_ONLY_DIGITS}
                 value={field.value}
                 onChange={field.onChange}
                 aria-invalid={!!errors.code}
+                aria-describedby={errors.code ? "verify-code-error" : undefined}
               >
                 <InputOTPGroup>
                   {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -83,7 +87,7 @@ export function VerifyEmailForm() {
               </InputOTP>
             )}
           />
-          <FieldError errors={[errors.code]} />
+          <FieldError id="verify-code-error" errors={[errors.code]} />
         </Field>
         {serverError ? <FormErrorAlert>{serverError}</FormErrorAlert> : null}
         <Button type="submit" disabled={isSubmitting}>

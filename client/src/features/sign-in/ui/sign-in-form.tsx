@@ -45,22 +45,34 @@ export function SignInForm() {
             type="email"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "sign-in-email-error" : undefined}
             {...form.register("email")}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError id="sign-in-email-error" errors={[errors.email]} />
         </Field>
         <Field data-invalid={!!errors.password}>
-          <FieldLabel htmlFor="sign-in-password">
-            {t("auth.password")}
-          </FieldLabel>
+          <div className="flex items-center justify-between">
+            <FieldLabel htmlFor="sign-in-password">
+              {t("auth.password")}
+            </FieldLabel>
+            <Link
+              className="text-sm text-muted-foreground underline"
+              to="/forgot-password"
+            >
+              {t("auth.links.forgot")}
+            </Link>
+          </div>
           <PasswordInput
             id="sign-in-password"
             autoComplete="current-password"
             aria-invalid={!!errors.password}
+            aria-describedby={
+              errors.password ? "sign-in-password-error" : undefined
+            }
             toggleLabel={t("auth.togglePassword")}
             {...form.register("password")}
           />
-          <FieldError errors={[errors.password]} />
+          <FieldError id="sign-in-password-error" errors={[errors.password]} />
         </Field>
         {serverError ? (
           <FormErrorAlert>
@@ -81,10 +93,7 @@ export function SignInForm() {
           {isSubmitting ? <Spinner /> : null}
           {t("auth.signIn.submit")}
         </Button>
-        <div className="flex flex-wrap justify-between gap-2 text-sm">
-          <Link className="underline" to="/forgot-password">
-            {t("auth.links.forgot")}
-          </Link>
+        <div className="text-sm text-center text-muted-foreground">
           <Link className="underline" to="/sign-up">
             {t("auth.links.signUp")}
           </Link>

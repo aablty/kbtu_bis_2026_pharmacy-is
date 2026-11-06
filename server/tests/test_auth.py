@@ -22,7 +22,8 @@ async def _register_and_verify(
     client: AsyncClient, email_sender: RecordingEmailSender, email: str
 ) -> None:
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+        "/auth/register",
+        json={"email": email, "password": "correct-horse-1", "full_name": "Test User"},
     )
     assert resp.status_code == 201, resp.text
 
@@ -36,7 +37,8 @@ async def test_register_succeeds_when_email_delivery_fails(client: AsyncClient) 
     email = unique_email()
 
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+        "/auth/register",
+        json={"email": email, "password": "correct-horse-1", "full_name": "Test User"},
     )
     assert resp.status_code == 201, resp.text
 
@@ -50,7 +52,8 @@ async def test_register_verify_login_flow(
     email = unique_email()
 
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+        "/auth/register",
+        json={"email": email, "password": "correct-horse-1", "full_name": "Test User"},
     )
     assert resp.status_code == 201
     body = resp.json()
@@ -79,6 +82,7 @@ async def test_register_verify_login_flow(
     )
     assert resp.status_code == 200
     assert resp.json()["email"] == email
+    assert resp.json()["full_name"] == "Test User"
 
 
 async def test_duplicate_registration_rejected(
@@ -88,9 +92,24 @@ async def test_duplicate_registration_rejected(
     await _register_and_verify(client, email_sender, email)
 
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "another-pass-1"}
+        "/auth/register",
+        json={"email": email, "password": "another-pass-1", "full_name": "Test User"},
     )
     assert resp.status_code == 409
+
+
+async def test_register_rejects_whitespace_only_full_name(
+    client: AsyncClient,
+) -> None:
+    resp = await client.post(
+        "/auth/register",
+        json={
+            "email": unique_email(),
+            "password": "correct-horse-1",
+            "full_name": "   ",
+        },
+    )
+    assert resp.status_code == 422
 
 
 async def test_wrong_otp_code_is_rejected_and_locks_after_max_attempts(
@@ -98,7 +117,8 @@ async def test_wrong_otp_code_is_rejected_and_locks_after_max_attempts(
 ) -> None:
     email = unique_email()
     resp = await client.post(
-        "/auth/register", json={"email": email, "password": "correct-horse-1"}
+        "/auth/register",
+        json={"email": email, "password": "correct-horse-1", "full_name": "Test User"},
     )
     assert resp.status_code == 201
 
@@ -173,7 +193,11 @@ async def test_login_email_is_case_insensitive(
     # And registering the same address again, in a different case, is still a duplicate.
     resp = await client.post(
         "/auth/register",
-        json={"email": email.upper(), "password": "another-pass-1"},
+        json={
+            "email": email.upper(),
+            "password": "another-pass-1",
+            "full_name": "Test User",
+        },
     )
     assert resp.status_code == 409
 

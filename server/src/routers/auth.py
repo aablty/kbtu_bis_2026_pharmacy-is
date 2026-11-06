@@ -44,7 +44,7 @@ async def register(
 ) -> RegisterResponse:
     try:
         user = await auth_service.register(
-            payload.email, payload.password, payload.preferred_locale
+            payload.email, payload.password, payload.full_name, payload.preferred_locale
         )
     except EmailAlreadyRegisteredError:
         raise HTTPException(

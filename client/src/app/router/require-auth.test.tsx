@@ -25,6 +25,7 @@ function setUser(role: "admin" | "customer") {
   useSessionStore.getState().setUser({
     user_id: 1,
     email: "a@example.com",
+    full_name: "A Test",
     role,
     preferred_locale: "en",
     is_active: true,

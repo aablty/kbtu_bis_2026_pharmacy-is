@@ -33,7 +33,7 @@ class AuthService:
         self._otp = otp_service
 
     async def register(
-        self, email: str, password: str, preferred_locale: Locale
+        self, email: str, password: str, full_name: str, preferred_locale: Locale
     ) -> User:
         if await self._users.get_by_email(email) is not None:
             raise EmailAlreadyRegisteredError(email)
@@ -41,6 +41,7 @@ class AuthService:
         user = User(
             email=email,
             password_hash=hash_password(password),
+            full_name=full_name,
             role=UserRole.CUSTOMER,
             preferred_locale=preferred_locale,
         )
@@ -112,6 +113,7 @@ class AuthService:
                 user = User(
                     email=email,
                     password_hash=None,
+                    full_name=identity.name,
                     google_id=identity.sub,
                     role=UserRole.CUSTOMER,
                     email_verified_at=datetime.now(UTC),
