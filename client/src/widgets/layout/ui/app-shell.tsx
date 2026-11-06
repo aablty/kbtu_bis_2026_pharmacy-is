@@ -34,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <TopBar>
+        <NavItem to="/catalog" label={t("nav.catalog")} />
         {isStaff ? <NavItem to="/staff" label={t("auth.staff.title")} /> : null}
         {isAdmin ? <NavItem to="/admin" label={t("auth.admin.title")} /> : null}
         {user ? <AccountMenu user={user} /> : null}

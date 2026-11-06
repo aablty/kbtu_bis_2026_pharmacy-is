@@ -342,3 +342,54 @@ async def test_category_create_handles_slug_race(
         "/categories", json={"name": "Race Again"}, headers=headers
     )
     assert resp.status_code == 409
+
+
+async def test_cursor_pagination_is_stable_with_duplicate_names_and_filters(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    headers = auth_headers(admin_token)
+    supplier_id = await _create_supplier(client, headers)
+    category = await _create_category(client, headers, "Cursor Cat")
+
+    for i, price in enumerate(["1.00", "2.00", "3.00", "9.00", "9.50"]):
+        resp = await client.post(
+            "/medicines",
+            json={
+                "name": "Cursorin",  # identical names: only the id tiebreak orders them
+                "price": price,
+                "stock_quantity": 0 if i == 0 else 5,
+                "category_id": category["category_id"],
+                "supplier_id": supplier_id,
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+
+    base = {"category_id": category["category_id"], "limit": 2}
+    seen: list[int] = []
+    cursor = None
+    while True:
+        resp = await client.get(
+            "/medicines", params={**base, **({"cursor": cursor} if cursor else {})}
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        seen += [m["medicine_id"] for m in body["items"]]
+        cursor = body["next_cursor"]
+        if cursor is None:
+            break
+    assert len(seen) == len(set(seen)) == 5
+
+    offset_page = await client.get("/medicines", params={**base, "offset": 2})
+    assert [m["medicine_id"] for m in offset_page.json()["items"]] == seen[2:4]
+
+    resp = await client.get(
+        "/medicines",
+        params={**base, "limit": 10, "in_stock": True, "min_price": 2, "max_price": 9},
+    )
+    assert [m["price"] for m in resp.json()["items"]] == ["2.00", "3.00", "9.00"]
+
+    assert (
+        await client.get("/medicines", params={"cursor": "junk"})
+    ).status_code == 422

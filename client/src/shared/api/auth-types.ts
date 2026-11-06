@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "pharmacist" | "cashier" | "customer";
 
-export type Locale = "en" | "ru" | "kk";
+export type Locale = "en" | "ru";
 
 export interface TokenPair {
   access_token: string;

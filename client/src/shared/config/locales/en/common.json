@@ -124,6 +124,41 @@
     "label": "Language"
   },
   "nav": {
-    "menu": "Menu"
+    "menu": "Menu",
+    "catalog": "Catalog"
+  },
+  "catalog": {
+    "title": "Catalog",
+    "search": "Search by name or manufacturer",
+    "searchSubmit": "Search",
+    "allCategories": "All categories",
+    "categories": "Categories",
+    "empty": "No medicines match your search.",
+    "error": "Could not load the catalog. Please try again.",
+    "loading": "Loading…",
+    "pagination": "Pagination",
+    "prev": "Previous",
+    "next": "Next",
+    "requiresPrescription": "Prescription required",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "inStockOnly": "In stock only",
+    "otcOnly": "No prescription needed",
+    "minPrice": "Min price",
+    "maxPrice": "Max price",
+    "clearFilters": "Clear filters",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "noImage": "No photo",
+    "goToPage": "Page {{page}}"
+  },
+  "medicine": {
+    "back": "Back to catalog",
+    "notFound": "This medicine could not be found.",
+    "dosageForm": "Dosage form",
+    "price": "Price",
+    "availability": "Availability",
+    "prescription": "Prescription",
+    "noPrescription": "Not required"
   }
 }

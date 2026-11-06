@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
@@ -43,6 +44,10 @@ class Medicine(Base):
         ForeignKey("suppliers.supplier_id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
+    )
+    # Ordered gallery of remote image URLs; first entry is the primary photo.
+    image_urls: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list, server_default="[]"
     )
     # Reserved for the future scraper/import pipeline (feat/data-import) to upsert
     # against instead of duplicating rows - unused by anything built so far.

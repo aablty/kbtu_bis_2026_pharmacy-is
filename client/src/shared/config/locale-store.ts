@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import i18n from "@/shared/config/i18n";
 
-export type Locale = "en" | "ru" | "kk";
+export type Locale = "en" | "ru";
 
 interface LocaleState {
   locale: Locale;

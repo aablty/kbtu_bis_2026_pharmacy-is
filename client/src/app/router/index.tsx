@@ -1,7 +1,9 @@
 import { createBrowserRouter } from "react-router";
 import { AdminPage } from "@/pages/admin";
+import { CatalogPage } from "@/pages/catalog";
 import { ForgotPasswordPage } from "@/pages/forgot-password";
 import { HomePage } from "@/pages/home";
+import { MedicinePage } from "@/pages/medicine";
 import { ProfilePage } from "@/pages/profile";
 import { ResetPasswordPage } from "@/pages/reset-password";
 import { SignInPage } from "@/pages/sign-in";
@@ -19,6 +21,8 @@ export const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
+  { path: "/catalog", element: <CatalogPage /> },
+  { path: "/catalog/:medicineId", element: <MedicinePage /> },
   {
     element: <RequireAuth />,
     children: [{ path: "/profile", element: <ProfilePage /> }],

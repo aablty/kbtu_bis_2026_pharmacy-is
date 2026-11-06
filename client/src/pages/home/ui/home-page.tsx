@@ -61,6 +61,9 @@ export function HomePage() {
     <div className="flex min-h-svh flex-col">
       <TopBar>
         <Button variant="ghost" asChild>
+          <Link to="/catalog">{t("nav.catalog")}</Link>
+        </Button>
+        <Button variant="ghost" asChild>
           <Link to="/sign-in">{t("auth.links.signIn")}</Link>
         </Button>
         <Button asChild>

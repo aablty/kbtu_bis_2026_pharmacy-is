@@ -14,7 +14,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   ru: "Русский",
-  kk: "Қазақша",
 };
 
 export function LocaleToggle() {

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import (
@@ -53,26 +55,33 @@ class MedicineService:
         q: str | None,
         category_id: int | None,
         requires_prescription: bool | None,
+        in_stock: bool = False,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
         limit: int,
         offset: int,
-    ) -> tuple[list[Medicine], int]:
+        after: tuple[str, int] | None = None,
+    ) -> tuple[list[Medicine], int, bool]:
+        """-> (items, total, has_more)."""
         category_ids = None
         if category_id is not None:
             if await self._categories.get_by_id(category_id) is None:
                 raise CategoryNotFoundError(category_id)
             category_ids = await self._categories.get_descendant_ids(category_id)
 
-        items = await self._repo.search(
-            q=q,
-            category_ids=category_ids,
-            requires_prescription=requires_prescription,
-            limit=limit,
-            offset=offset,
-        )
-        total = await self._repo.count(
-            q=q, category_ids=category_ids, requires_prescription=requires_prescription
-        )
-        return items, total
+        filters = {
+            "q": q,
+            "category_ids": category_ids,
+            "requires_prescription": requires_prescription,
+            "in_stock": in_stock,
+            "min_price": min_price,
+            "max_price": max_price,
+        }
+        rows = await self._repo.search(
+            **filters, limit=limit + 1, offset=offset, after=after
+        )  # one extra row tells us whether a next page exists
+        total = await self._repo.count(**filters)
+        return rows[:limit], total, len(rows) > limit
 
     async def update(self, medicine_id: int, data: MedicineUpdate) -> Medicine:
         medicine = await self.get(medicine_id)

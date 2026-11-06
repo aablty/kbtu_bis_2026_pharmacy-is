@@ -11,7 +11,6 @@ class UserRole(StrEnum):
 class Locale(StrEnum):
     EN = "en"
     RU = "ru"
-    KK = "kk"
 
 
 class OtpPurpose(StrEnum):

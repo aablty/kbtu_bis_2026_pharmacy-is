@@ -37,6 +37,7 @@ class CategoryUpdate(BaseModel):
 class CategoryResponse(BaseModel):
     category_id: int
     name: str
+    name_ru: str | None
     slug: str
     parent_id: int | None
 
@@ -78,6 +79,7 @@ class MedicineResponse(BaseModel):
     reorder_threshold: int
     category_id: int
     supplier_id: int
+    image_urls: list[str]
 
     model_config = {"from_attributes": True}
 
@@ -87,3 +89,4 @@ class MedicineListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    next_cursor: str | None = None

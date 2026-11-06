@@ -1,4 +1,6 @@
-from sqlalchemy import func, or_, select, update
+from decimal import Decimal
+
+from sqlalchemy import func, or_, select, tuple_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -22,6 +24,9 @@ class MedicineRepository:
         q: str | None,
         category_ids: list[int] | None,
         requires_prescription: bool | None,
+        in_stock: bool = False,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
     ) -> Select:
         if q:
             pattern = f"%{q}%"
@@ -32,6 +37,12 @@ class MedicineRepository:
             stmt = stmt.where(Medicine.category_id.in_(category_ids))
         if requires_prescription is not None:
             stmt = stmt.where(Medicine.requires_prescription == requires_prescription)
+        if in_stock:
+            stmt = stmt.where(Medicine.stock_quantity > 0)
+        if min_price is not None:
+            stmt = stmt.where(Medicine.price >= min_price)
+        if max_price is not None:
+            stmt = stmt.where(Medicine.price <= max_price)
         return stmt
 
     async def search(
@@ -40,16 +51,32 @@ class MedicineRepository:
         q: str | None = None,
         category_ids: list[int] | None = None,
         requires_prescription: bool | None = None,
+        in_stock: bool = False,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
         limit: int = 20,
         offset: int = 0,
+        after: tuple[str, int] | None = None,
     ) -> list[Medicine]:
         stmt = self._filtered(
             select(Medicine),
             q=q,
             category_ids=category_ids,
             requires_prescription=requires_prescription,
+            in_stock=in_stock,
+            min_price=min_price,
+            max_price=max_price,
         )
-        stmt = stmt.order_by(Medicine.name).limit(limit).offset(offset)
+        # medicine_id breaks name ties: without it, equal names have no stable
+        # order and rows can repeat or vanish across pages.
+        stmt = stmt.order_by(Medicine.name, Medicine.medicine_id)
+        if after is not None:  # keyset seek: replaces OFFSET
+            stmt = stmt.where(
+                tuple_(Medicine.name, Medicine.medicine_id) > tuple_(*after)
+            )
+        else:
+            stmt = stmt.offset(offset)
+        stmt = stmt.limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -59,12 +86,18 @@ class MedicineRepository:
         q: str | None = None,
         category_ids: list[int] | None = None,
         requires_prescription: bool | None = None,
+        in_stock: bool = False,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
     ) -> int:
         stmt = self._filtered(
             select(func.count(Medicine.medicine_id)),
             q=q,
             category_ids=category_ids,
             requires_prescription=requires_prescription,
+            in_stock=in_stock,
+            min_price=min_price,
+            max_price=max_price,
         )
         result = await self._session.execute(stmt)
         return result.scalar_one()

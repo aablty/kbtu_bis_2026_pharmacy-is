@@ -1,7 +1,9 @@
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from src.core.cursor import decode_cursor, encode_cursor
 from src.core.exceptions import (
     CategoryNotFoundError,
     CategoryNotLeafError,
@@ -33,16 +35,33 @@ async def search_medicines(
         int | None, Query(description="Matches this category and its subcategories")
     ] = None,
     requires_prescription: bool | None = None,
+    in_stock: bool = False,
+    min_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    max_price: Annotated[Decimal | None, Query(ge=0)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
+    cursor: Annotated[
+        str | None,
+        Query(description="next_cursor from the previous page; replaces offset"),
+    ] = None,
 ) -> MedicineListResponse:
     try:
-        items, total = await service.search(
+        after = decode_cursor(cursor) if cursor else None
+    except ValueError:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid cursor"
+        ) from None
+    try:
+        items, total, has_more = await service.search(
             q=q,
             category_id=category_id,
             requires_prescription=requires_prescription,
+            in_stock=in_stock,
+            min_price=min_price,
+            max_price=max_price,
             limit=limit,
             offset=offset,
+            after=after,
         )
     except CategoryNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found") from None
@@ -51,6 +70,9 @@ async def search_medicines(
         total=total,
         limit=limit,
         offset=offset,
+        next_cursor=(
+            encode_cursor(items[-1].name, items[-1].medicine_id) if has_more else None
+        ),
     )
 
 

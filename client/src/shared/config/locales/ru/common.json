@@ -124,6 +124,41 @@
     "label": "Язык"
   },
   "nav": {
-    "menu": "Меню"
+    "menu": "Меню",
+    "catalog": "Каталог"
+  },
+  "catalog": {
+    "title": "Каталог",
+    "search": "Поиск по названию или производителю",
+    "searchSubmit": "Найти",
+    "allCategories": "Все категории",
+    "categories": "Категории",
+    "empty": "По вашему запросу лекарств не найдено.",
+    "error": "Не удалось загрузить каталог. Попробуйте ещё раз.",
+    "loading": "Загрузка…",
+    "pagination": "Постраничная навигация",
+    "prev": "Назад",
+    "next": "Вперёд",
+    "requiresPrescription": "Нужен рецепт",
+    "inStock": "В наличии",
+    "outOfStock": "Нет в наличии",
+    "inStockOnly": "Только в наличии",
+    "otcOnly": "Без рецепта",
+    "minPrice": "Цена от",
+    "maxPrice": "Цена до",
+    "clearFilters": "Сбросить фильтры",
+    "expand": "Развернуть",
+    "collapse": "Свернуть",
+    "noImage": "Нет фото",
+    "goToPage": "Страница {{page}}"
+  },
+  "medicine": {
+    "back": "Назад в каталог",
+    "notFound": "Это лекарство не найдено.",
+    "dosageForm": "Форма выпуска",
+    "price": "Цена",
+    "availability": "Наличие",
+    "prescription": "Рецепт",
+    "noPrescription": "Не требуется"
   }
 }

@@ -15,6 +15,8 @@ class Category(Base):
 
     category_id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # `name` is the English default; nullable Russian translation falls back to it in the UI.
+    name_ru: Mapped[str | None] = mapped_column(String(100))
     slug: Mapped[str] = mapped_column(
         String(150), unique=True, index=True, nullable=False
     )
