@@ -160,5 +160,63 @@
     "availability": "Availability",
     "prescription": "Prescription",
     "noPrescription": "Not required"
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Your cart is empty.",
+    "browse": "Browse catalog",
+    "add": "Add to cart",
+    "outOfStock": "Out of stock",
+    "increase": "Increase quantity",
+    "decrease": "Decrease quantity",
+    "remove": "Remove",
+    "subtotal": "Subtotal",
+    "checkout": "Checkout"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "summary": "Summary",
+    "fulfillment": "Fulfillment",
+    "pickup": "Pickup",
+    "delivery": "Delivery",
+    "address": "Delivery address",
+    "payment": "Payment",
+    "cash": "Cash on pickup",
+    "card": "Card (simulated)",
+    "cardNote": "Simulated payment: nothing is charged.",
+    "prescription": "Prescription",
+    "prescriptionSelect": "Choose an approved prescription",
+    "prescriptionNone": "You have no approved prescription yet. Orders with prescription medicines need one.",
+    "place": "Place order",
+    "placing": "Placing order…",
+    "validation": {
+      "addressRequired": "Enter a delivery address",
+      "prescriptionRequired": "Choose an approved prescription"
+    },
+    "errors": {
+      "outOfStock": "Some items no longer have enough stock. Update your cart and try again.",
+      "prescription": "This prescription can't be used for the order.",
+      "generic": "Could not place the order. Please try again."
+    }
+  },
+  "order": {
+    "title": "Order #{{id}}",
+    "placed": "Thank you! Your order is placed.",
+    "notFound": "This order could not be found.",
+    "total": "Total",
+    "payment": "Payment",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "ready": "Ready for pickup",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "paymentStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded"
+    }
   }
 }

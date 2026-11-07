@@ -1,4 +1,5 @@
 import { CheckCircle2Icon, FileTextIcon, XCircleIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import type { Medicine } from "@/shared/api";
@@ -6,7 +7,14 @@ import { Badge } from "@/shared/ui/badge";
 import { formatPrice } from "../model/format-price";
 import { ImageStrip } from "./image-strip";
 
-export function MedicineCard({ medicine }: { medicine: Medicine }) {
+/** `action` is rendered beside the price, above the card link (e.g. the cart control). */
+export function MedicineCard({
+  medicine,
+  action,
+}: {
+  medicine: Medicine;
+  action?: ReactNode;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const href = `/catalog/${medicine.medicine_id}`;
@@ -46,9 +54,12 @@ export function MedicineCard({ medicine }: { medicine: Medicine }) {
         <p className="truncate text-xs text-muted-foreground">
           {medicine.manufacturer ?? "—"}
         </p>
-        <span className="mt-auto pt-2 text-lg font-semibold tabular-nums">
-          {formatPrice(medicine.price, i18n.language)}
-        </span>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
+          <span className="text-lg font-semibold tabular-nums">
+            {formatPrice(medicine.price, i18n.language)}
+          </span>
+          {action ? <div className="relative z-10">{action}</div> : null}
+        </div>
       </div>
     </article>
   );

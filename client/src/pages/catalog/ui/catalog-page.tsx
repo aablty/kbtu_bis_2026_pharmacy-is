@@ -15,6 +15,7 @@ import {
   MedicineCard,
   PageNumbers,
 } from "@/features/browse-catalog";
+import { CartControl } from "@/features/cart";
 import { catalogEndpoints } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -322,7 +323,10 @@ export function CatalogPage() {
             >
               {medicines.data.items.map((medicine) => (
                 <li key={medicine.medicine_id}>
-                  <MedicineCard medicine={medicine} />
+                  <MedicineCard
+                    medicine={medicine}
+                    action={<CartControl medicine={medicine} compact />}
+                  />
                 </li>
               ))}
             </ul>

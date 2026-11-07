@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 import { formatPrice } from "@/features/browse-catalog";
+import { CartControl } from "@/features/cart";
 import { catalogEndpoints } from "@/shared/api";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -88,7 +89,7 @@ export function MedicinePage() {
                 {data.manufacturer ?? "—"}
               </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-5">
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
                 <dt className="text-muted-foreground">
                   {t("medicine.dosageForm")}
@@ -119,6 +120,7 @@ export function MedicinePage() {
                     : t("medicine.noPrescription")}
                 </dd>
               </dl>
+              <CartControl medicine={data} />
             </CardContent>
           </div>
         </Card>
