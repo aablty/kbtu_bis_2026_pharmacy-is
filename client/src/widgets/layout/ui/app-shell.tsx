@@ -35,13 +35,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <TopBar>
+      <TopBar account={user ? <AccountMenu user={user} /> : null}>
         <NavItem to="/catalog" label={t("nav.catalog")} />
         {isStaff ? <NavItem to="/staff" label={t("auth.staff.title")} /> : null}
         {isAdmin ? <NavItem to="/admin" label={t("auth.admin.title")} /> : null}
-        <NotificationsBell />
         <CartLink />
-        {user ? <AccountMenu user={user} /> : null}
+        <NotificationsBell />
       </TopBar>
       <main className="mx-auto w-full max-w-5xl flex-1 p-4">{children}</main>
     </div>

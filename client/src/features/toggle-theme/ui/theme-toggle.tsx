@@ -1,55 +1,42 @@
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type Theme, useThemeStore } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/toggle-group";
 
-export function ThemeToggle() {
+const OPTIONS = [
+  { value: "light", key: "theme.light", Icon: SunIcon },
+  { value: "dark", key: "theme.dark", Icon: MoonIcon },
+  { value: "system", key: "theme.system", Icon: MonitorIcon },
+] as const;
+
+export function ThemeToggle({ className }: { className?: string }) {
   const { t } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
-  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const setTheme = useThemeStore((state) => state.setTheme);
 
-  const TriggerIcon = resolvedTheme === "dark" ? MoonIcon : SunIcon;
-
   return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label={t("theme.label")}>
-              <TriggerIcon />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{t("theme.label")}</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup
-          value={theme}
-          onValueChange={(value) => setTheme(value as Theme)}
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      spacing={0}
+      value={theme}
+      // Ignore the empty value a click on the active item sends.
+      onValueChange={(value) => value && setTheme(value as Theme)}
+      aria-label={t("theme.label")}
+      className="w-full"
+    >
+      {OPTIONS.map(({ value, key, Icon }) => (
+        <ToggleGroupItem
+          key={value}
+          value={value}
+          aria-label={t(key)}
+          title={t(key)}
+          className="flex-1"
         >
-          <DropdownMenuRadioItem value="light">
-            <SunIcon />
-            {t("theme.light")}
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="dark">
-            <MoonIcon />
-            {t("theme.dark")}
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="system">
-            <MonitorIcon />
-            {t("theme.system")}
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <Icon />
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }

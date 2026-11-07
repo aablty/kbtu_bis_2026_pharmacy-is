@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
+import { ThemeToggle } from "@/features/toggle-theme";
 import type { UserProfile } from "@/shared/api";
 import { endSession } from "@/shared/auth";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
@@ -36,6 +37,11 @@ export function AccountMenu({ user }: { user: UserProfile }) {
         <DropdownMenuItem asChild>
           <Link to="/profile">{t("auth.profile.title")}</Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <div className="flex flex-col justify-between gap-2 px-2 text-sm">
+          {/*<span className="text-muted-foreground">{t("theme.label")}</span>*/}
+          <ThemeToggle />
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={onSignOut}>
           {t("auth.signOut")}

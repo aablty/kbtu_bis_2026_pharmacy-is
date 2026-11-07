@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { LocaleToggle } from "@/features/toggle-locale";
-import { ThemeToggle } from "@/features/toggle-theme";
 import { AppLogo } from "@/shared/ui/app-logo";
 import { Button } from "@/shared/ui/button";
 import {
@@ -15,7 +14,14 @@ import {
   SheetTrigger,
 } from "@/shared/ui/sheet";
 
-export function TopBar({ children }: { children?: ReactNode }) {
+/** `children` are the nav items; `account` (profile menu) sits last, after the language switcher. */
+export function TopBar({
+  children,
+  account,
+}: {
+  children?: ReactNode;
+  account?: ReactNode;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -29,7 +35,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
           {children}
           <div className="flex items-center gap-2">
             <LocaleToggle />
-            <ThemeToggle />
+            {account}
           </div>
         </nav>
 
@@ -56,7 +62,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
               </SheetClose>
               <div className="flex items-center gap-2 border-t pt-4">
                 <LocaleToggle />
-                <ThemeToggle />
+                {account}
               </div>
             </div>
           </SheetContent>

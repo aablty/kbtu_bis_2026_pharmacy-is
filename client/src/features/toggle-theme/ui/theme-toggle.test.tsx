@@ -17,8 +17,7 @@ function renderToggle() {
 }
 
 async function pickTheme(name: string) {
-  await userEvent.click(screen.getByRole("button", { name: "Theme" }));
-  await userEvent.click(await screen.findByRole("menuitemradio", { name }));
+  await userEvent.click(screen.getByRole("radio", { name }));
 }
 
 describe("ThemeToggle", () => {
