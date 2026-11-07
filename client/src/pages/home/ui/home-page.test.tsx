@@ -14,7 +14,7 @@ function renderHome() {
         <MemoryRouter initialEntries={["/"]}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/profile" element={<p>profile page</p>} />
+            <Route path="/catalog" element={<p>catalog page</p>} />
           </Routes>
         </MemoryRouter>
       </TooltipProvider>
@@ -36,7 +36,7 @@ describe("HomePage", () => {
     expect(screen.getByText("Admin analytics")).toBeInTheDocument();
   });
 
-  it("redirects a signed-in user to their profile instead of the landing page", () => {
+  it("redirects a signed-in user to the catalog instead of the landing page", () => {
     useSessionStore.getState().setUser({
       user_id: 1,
       email: "a@example.com",
@@ -48,7 +48,7 @@ describe("HomePage", () => {
 
     renderHome();
 
-    expect(screen.getByText("profile page")).toBeInTheDocument();
+    expect(screen.getByText("catalog page")).toBeInTheDocument();
     expect(
       screen.queryByText("Run your pharmacy, not your paperwork."),
     ).not.toBeInTheDocument();

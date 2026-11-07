@@ -49,7 +49,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         }
         mobileActions={user ? <NotificationsBell /> : null}
       >
-        <NavItem to="/catalog" label={t("nav.catalog")} />
+        {user?.role === "customer" ? null : (
+          <NavItem to="/catalog" label={t("nav.catalog")} />
+        )}
         {isStaff ? <NavItem to="/staff" label={t("auth.staff.title")} /> : null}
         {isAdmin ? <NavItem to="/admin" label={t("auth.admin.title")} /> : null}
       </TopBar>

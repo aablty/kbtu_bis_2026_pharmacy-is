@@ -54,7 +54,7 @@ export function HomePage() {
   }[];
 
   if (user) {
-    return <Navigate to="/profile" replace />;
+    return <Navigate to="/catalog" replace />;
   }
 
   return (
