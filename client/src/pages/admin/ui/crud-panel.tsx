@@ -14,6 +14,7 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
   Table,
   TableBody,
@@ -116,6 +117,36 @@ export function CrudPanel<T>({
       )
     : false;
 
+  // Edit and delete, shared by the table row (desktop) and the card (phone).
+  function actions(item: T) {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={t("admin.edit")}
+          title={t("admin.edit")}
+          onClick={() => open(item)}
+        >
+          <PencilIcon />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={t("admin.delete")}
+          title={t("admin.delete")}
+          disabled={removeMutation.isPending}
+          onClick={() => {
+            if (window.confirm(t("admin.confirmDelete")))
+              removeMutation.mutate(idOf(item));
+          }}
+        >
+          <Trash2Icon />
+        </Button>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -126,53 +157,58 @@ export function CrudPanel<T>({
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((c) => (
-              <TableHead key={c.header}>{c.header}</TableHead>
-            ))}
-            <TableHead className="text-right">
-              {t("staff.orders.actions")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items?.map((item) => (
-            <TableRow key={idOf(item)}>
+      {items === undefined ? (
+        <SkeletonList rows={4} label={t("catalog.loading")} />
+      ) : null}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
               {columns.map((c) => (
-                <TableCell key={c.header}>{c.cell(item)}</TableCell>
+                <TableHead key={c.header}>{c.header}</TableHead>
               ))}
-              <TableCell>
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t("admin.edit")}
-                    title={t("admin.edit")}
-                    onClick={() => open(item)}
-                  >
-                    <PencilIcon />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t("admin.delete")}
-                    title={t("admin.delete")}
-                    disabled={removeMutation.isPending}
-                    onClick={() => {
-                      if (window.confirm(t("admin.confirmDelete")))
-                        removeMutation.mutate(idOf(item));
-                    }}
-                  >
-                    <Trash2Icon />
-                  </Button>
-                </div>
-              </TableCell>
+              <TableHead className="text-right">
+                {t("staff.orders.actions")}
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items?.map((item) => (
+              <TableRow key={idOf(item)}>
+                {columns.map((c) => (
+                  <TableCell key={c.header}>{c.cell(item)}</TableCell>
+                ))}
+                <TableCell>
+                  <div className="flex justify-end gap-1">{actions(item)}</div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ul className="flex flex-col gap-3 md:hidden">
+        {items?.map((item) => (
+          <li
+            key={idOf(item)}
+            className="flex flex-col gap-3 rounded-2xl border p-4"
+          >
+            <dl className="flex flex-col gap-1.5 text-sm">
+              {columns.map((c) => (
+                <div key={c.header} className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{c.header}</dt>
+                  <dd className="min-w-0 truncate text-right">
+                    {c.cell(item)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <div className="flex justify-end gap-1 border-t pt-3">
+              {actions(item)}
+            </div>
+          </li>
+        ))}
+      </ul>
       {footer}
 
       <Dialog

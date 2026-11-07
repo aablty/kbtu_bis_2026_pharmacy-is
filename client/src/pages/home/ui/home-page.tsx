@@ -12,10 +12,9 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate } from "react-router";
 import { useSessionStore } from "@/shared/auth";
 import { Button } from "@/shared/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { TopBar } from "@/widgets/layout";
 
-const FEATURE_ICONS = [
+const FEATURE_ICONS: ComponentType<{ className?: string }>[] = [
   ShieldCheckIcon,
   UserIcon,
   FileTextIcon,
@@ -23,27 +22,7 @@ const FEATURE_ICONS = [
   CreditCardIcon,
   ActivityIcon,
   BarChart3Icon,
-] as const;
-
-function FeatureCard({
-  Icon,
-  title,
-  description,
-}: {
-  Icon: ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <Icon className="size-6 text-primary" />
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-    </Card>
-  );
-}
+];
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -66,20 +45,17 @@ export function HomePage() {
         <Button variant="ghost" asChild>
           <Link to="/sign-in">{t("auth.links.signIn")}</Link>
         </Button>
-        <Button asChild>
-          <Link to="/sign-up">{t("auth.links.signUp")}</Link>
-        </Button>
       </TopBar>
 
       <main className="flex-1">
-        <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-20 text-center">
+        <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-16 text-center md:py-20">
           <h1 className="font-heading text-4xl font-semibold text-balance sm:text-5xl">
             {t("home.title")}
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground text-pretty">
             {t("home.subtitle")}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             <Button size="lg" asChild>
               <Link to="/sign-up">{t("home.cta.primary")}</Link>
             </Button>
@@ -89,17 +65,23 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-4 pb-20">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                Icon={FEATURE_ICONS[index % FEATURE_ICONS.length]}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </div>
+        <section className="mx-auto max-w-2xl px-4 pb-16">
+          <ul className="divide-y rounded-2xl border">
+            {features.map((feature, index) => {
+              const Icon = FEATURE_ICONS[index % FEATURE_ICONS.length];
+              return (
+                <li key={feature.title} className="flex gap-4 p-4">
+                  <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
+                  <div className="flex flex-col gap-0.5">
+                    <h2 className="text-sm font-semibold">{feature.title}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </main>
 

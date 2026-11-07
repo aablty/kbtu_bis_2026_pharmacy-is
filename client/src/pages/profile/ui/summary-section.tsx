@@ -6,6 +6,7 @@ import { formatPrice } from "@/features/browse-catalog";
 import { orderEndpoints, prescriptionEndpoints } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format-date";
 import { Badge } from "@/shared/ui/badge";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { summarize } from "../model/summary";
 
 /** Customer overview as one strip: four figures, then the latest order. */
@@ -22,9 +23,24 @@ export function SummarySection() {
 
   if (!orders.data || !prescriptions.data) {
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {t("catalog.loading")}
-      </p>
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label={t("catalog.loading")}
+        className="overflow-hidden rounded-2xl border"
+      >
+        <div className="grid grid-cols-2 divide-x divide-y md:grid-cols-4 md:divide-y-0">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col gap-2 p-4">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className="border-t px-4 py-3">
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+      </div>
     );
   }
 

@@ -1,20 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRightIcon, PackageIcon } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { formatPrice } from "@/features/browse-catalog";
-import { orderEndpoints } from "@/shared/api";
+import { type OrderStatus, orderEndpoints } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format-date";
 import { Badge } from "@/shared/ui/badge";
+import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import { AppShell } from "@/widgets/layout";
+
+const STATUSES: OrderStatus[] = [
+  "pending",
+  "confirmed",
+  "ready",
+  "completed",
+  "cancelled",
+];
 
 export function OrdersPage() {
   const { t, i18n } = useTranslation();
+  const [status, setStatus] = useState<OrderStatus | "all">("all");
   const orders = useQuery({
     queryKey: ["orders"],
     queryFn: orderEndpoints.list,
   });
-  const list = [...(orders.data ?? [])].sort((a, b) => b.order_id - a.order_id);
+  const list = [...(orders.data ?? [])]
+    .sort((a, b) => b.order_id - a.order_id)
+    .filter((o) => status === "all" || o.status === status);
 
   return (
     <AppShell>
@@ -23,16 +37,14 @@ export function OrdersPage() {
       </h1>
 
       {orders.isPending ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {t("catalog.loading")}
-        </p>
+        <SkeletonList rows={4} label={t("catalog.loading")} />
       ) : null}
       {orders.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {t("orders.error")}
         </p>
       ) : null}
-      {orders.data && list.length === 0 ? (
+      {orders.data && orders.data.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <PackageIcon className="size-12 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">{t("orders.empty")}</p>
@@ -40,6 +52,31 @@ export function OrdersPage() {
             {t("cart.browse")}
           </Link>
         </div>
+      ) : null}
+
+      {orders.data && orders.data.length > 0 ? (
+        <div className="mb-4 flex items-center gap-2">
+          <NativeSelect
+            aria-label={t("orders.filter")}
+            value={status}
+            onChange={(e) => setStatus(e.target.value as OrderStatus | "all")}
+            className="w-full sm:w-56"
+          >
+            <NativeSelectOption value="all">
+              {t("orders.allStatuses")}
+            </NativeSelectOption>
+            {STATUSES.map((s) => (
+              <NativeSelectOption key={s} value={s}>
+                {t(`order.status.${s}`)}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </div>
+      ) : null}
+      {orders.data && orders.data.length > 0 && list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t("orders.noneForFilter")}
+        </p>
       ) : null}
 
       {list.length > 0 ? (

@@ -118,7 +118,8 @@
       "generic": "Что-то пошло не так. Попробуйте ещё раз"
     },
     "togglePassword": "Показать или скрыть пароль",
-    "fullName": "Полное имя"
+    "fullName": "Полное имя",
+    "backHome": "На главную"
   },
   "locale": {
     "label": "Язык"
@@ -150,7 +151,9 @@
     "expand": "Развернуть",
     "collapse": "Свернуть",
     "noImage": "Нет фото",
-    "goToPage": "Страница {{page}}"
+    "goToPage": "Страница {{page}}",
+    "priceFrom": "от",
+    "priceTo": "до"
   },
   "medicine": {
     "back": "Назад в каталог",
@@ -355,14 +358,18 @@
       "out": "Нет в наличии",
       "very-low": "Очень мало",
       "low": "Заканчивается"
-    }
+    },
+    "revenueCaption": "Последние {{days}} дн.; дни без продаж — ноль"
   },
   "orders": {
     "title": "Заказы",
     "error": "Не удалось загрузить заказы.",
     "empty": "Заказов пока нет.",
     "number": "Заказ №{{id}}",
-    "itemsCount": "{{count}} шт."
+    "itemsCount": "{{count}} шт.",
+    "filter": "Фильтр по статусу",
+    "allStatuses": "Все статусы",
+    "noneForFilter": "Заказов с таким статусом нет."
   },
   "menu": {
     "account": "Аккаунт"

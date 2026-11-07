@@ -21,6 +21,7 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
   Table,
   TableBody,
@@ -76,6 +77,54 @@ export function PrescriptionsPanel() {
     });
   }
 
+  // Same actions in the table (desktop) and the cards (phone).
+  function actions(p: Prescription) {
+    return (
+      <>
+        <Button
+          asChild
+          variant="ghost"
+          size="icon-sm"
+          aria-label={t("prescriptions.open")}
+        >
+          <a href={p.file_url} target="_blank" rel="noreferrer">
+            <ExternalLinkIcon />
+          </a>
+        </Button>
+        {canReview && p.status === "pending" ? (
+          <>
+            <Button
+              size="sm"
+              disabled={review.isPending}
+              aria-label={t("staff.prescriptions.approve")}
+              title={t("staff.prescriptions.approve")}
+              onClick={() =>
+                review.mutate({ id: p.prescription_id, approve: true })
+              }
+            >
+              <CheckIcon />
+              {t("staff.prescriptions.approve")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={review.isPending}
+              aria-label={t("staff.prescriptions.reject")}
+              title={t("staff.prescriptions.reject")}
+              onClick={() => {
+                review.reset();
+                setRejecting(p);
+              }}
+            >
+              <XIcon />
+              {t("staff.prescriptions.reject")}
+            </Button>
+          </>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
@@ -85,7 +134,7 @@ export function PrescriptionsPanel() {
           onChange={(e) =>
             setFilter(e.target.value as PrescriptionStatus | "all")
           }
-          className="w-48"
+          className="w-full sm:w-48"
         >
           <NativeSelectOption value="pending">
             {t("prescriptions.status.pending")}
@@ -108,87 +157,79 @@ export function PrescriptionsPanel() {
         </p>
       ) : null}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>#</TableHead>
-            <TableHead>{t("staff.prescriptions.customer")}</TableHead>
-            <TableHead>{t("staff.orders.created")}</TableHead>
-            <TableHead>{t("staff.orders.status")}</TableHead>
-            <TableHead className="text-right">
-              {t("staff.orders.actions")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {shown.map((p) => (
-            <TableRow key={p.prescription_id}>
-              <TableCell className="font-medium">{p.prescription_id}</TableCell>
-              <TableCell className="tabular-nums">{p.customer_id}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDateTime(p.created_at, i18n.language)}
-              </TableCell>
-              <TableCell>
-                <Badge variant={BADGE[p.status]}>
-                  {t(`prescriptions.status.${p.status}`)}
-                </Badge>
-                {p.rejection_reason ? (
-                  <p className="mt-1 text-xs text-destructive">
-                    {p.rejection_reason}
-                  </p>
-                ) : null}
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-1">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t("prescriptions.open")}
-                  >
-                    <a href={p.file_url} target="_blank" rel="noreferrer">
-                      <ExternalLinkIcon />
-                    </a>
-                  </Button>
-                  {canReview && p.status === "pending" ? (
-                    <>
-                      <Button
-                        size="sm"
-                        disabled={review.isPending}
-                        aria-label={t("staff.prescriptions.approve")}
-                        title={t("staff.prescriptions.approve")}
-                        onClick={() =>
-                          review.mutate({
-                            id: p.prescription_id,
-                            approve: true,
-                          })
-                        }
-                      >
-                        <CheckIcon />
-                        {t("staff.prescriptions.approve")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={review.isPending}
-                        aria-label={t("staff.prescriptions.reject")}
-                        title={t("staff.prescriptions.reject")}
-                        onClick={() => {
-                          review.reset();
-                          setRejecting(p);
-                        }}
-                      >
-                        <XIcon />
-                        {t("staff.prescriptions.reject")}
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </TableCell>
+      {prescriptions.isPending ? (
+        <SkeletonList rows={4} label={t("catalog.loading")} />
+      ) : null}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>{t("staff.prescriptions.customer")}</TableHead>
+              <TableHead>{t("staff.orders.created")}</TableHead>
+              <TableHead>{t("staff.orders.status")}</TableHead>
+              <TableHead className="text-right">
+                {t("staff.orders.actions")}
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {shown.map((p) => (
+              <TableRow key={p.prescription_id}>
+                <TableCell className="font-medium">
+                  {p.prescription_id}
+                </TableCell>
+                <TableCell className="tabular-nums">{p.customer_id}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDateTime(p.created_at, i18n.language)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={BADGE[p.status]}>
+                    {t(`prescriptions.status.${p.status}`)}
+                  </Badge>
+                  {p.rejection_reason ? (
+                    <p className="mt-1 text-xs text-destructive">
+                      {p.rejection_reason}
+                    </p>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">{actions(p)}</div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ul className="flex flex-col gap-3 md:hidden">
+        {shown.map((p) => (
+          <li
+            key={p.prescription_id}
+            className="flex flex-col gap-3 rounded-2xl border p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">#{p.prescription_id}</span>
+              <Badge variant={BADGE[p.status]}>
+                {t(`prescriptions.status.${p.status}`)}
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+              <span>
+                {t("staff.prescriptions.customer")}:{" "}
+                <span className="tabular-nums text-foreground">
+                  {p.customer_id}
+                </span>
+              </span>
+              <span>{formatDateTime(p.created_at, i18n.language)}</span>
+              {p.rejection_reason ? (
+                <span className="text-destructive">{p.rejection_reason}</span>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">{actions(p)}</div>
+          </li>
+        ))}
+      </ul>
 
       <Dialog
         open={rejecting !== null}

@@ -264,9 +264,16 @@ export function CatalogPage() {
               </span>
               {t("catalog.otcOnly")}
             </Toggle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm">
+              <label
+                htmlFor="catalog-price-min"
+                className="text-muted-foreground"
+              >
+                {t("catalog.priceFrom")}
+              </label>
               <Input
                 name="min"
+                id="catalog-price-min"
                 type="number"
                 min={0}
                 inputMode="numeric"
@@ -274,15 +281,17 @@ export function CatalogPage() {
                 onChange={(e) =>
                   setPriceDraft({ ...priceDraft, min: e.target.value })
                 }
-                placeholder={t("catalog.minPrice")}
-                aria-label={t("catalog.minPrice")}
-                className="w-28"
+                className="w-24"
               />
-              <span aria-hidden className="text-muted-foreground">
-                —
-              </span>
+              <label
+                htmlFor="catalog-price-max"
+                className="text-muted-foreground"
+              >
+                {t("catalog.priceTo")}
+              </label>
               <Input
                 name="max"
+                id="catalog-price-max"
                 type="number"
                 min={0}
                 inputMode="numeric"
@@ -290,9 +299,7 @@ export function CatalogPage() {
                 onChange={(e) =>
                   setPriceDraft({ ...priceDraft, max: e.target.value })
                 }
-                placeholder={t("catalog.maxPrice")}
-                aria-label={t("catalog.maxPrice")}
-                className="w-28"
+                className="w-24"
               />
             </div>
             {hasFilters ? (

@@ -118,7 +118,8 @@
       "generic": "Something went wrong. Please try again"
     },
     "togglePassword": "Toggle password visibility",
-    "fullName": "Full name"
+    "fullName": "Full name",
+    "backHome": "Back to home"
   },
   "locale": {
     "label": "Language"
@@ -150,7 +151,9 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "noImage": "No photo",
-    "goToPage": "Page {{page}}"
+    "goToPage": "Page {{page}}",
+    "priceFrom": "from",
+    "priceTo": "to"
   },
   "medicine": {
     "back": "Back to catalog",
@@ -355,14 +358,18 @@
       "out": "Out of stock",
       "very-low": "Very low",
       "low": "Running low"
-    }
+    },
+    "revenueCaption": "Last {{days}} days; days without sales show zero"
   },
   "orders": {
     "title": "Orders",
     "error": "Could not load your orders.",
     "empty": "You have no orders yet.",
     "number": "Order #{{id}}",
-    "itemsCount": "{{count}} items"
+    "itemsCount": "{{count}} items",
+    "filter": "Filter by status",
+    "allStatuses": "All statuses",
+    "noneForFilter": "No orders with this status."
   },
   "menu": {
     "account": "Account"

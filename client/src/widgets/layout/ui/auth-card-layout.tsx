@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { AppLogo } from "@/shared/ui/app-logo";
 import {
   Card,
   CardContent,
@@ -17,10 +20,15 @@ export function AuthCardLayout({
   description?: string;
   children?: ReactNode;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex min-h-svh flex-col">
       <TopBar />
-      <main className="flex flex-1 items-center justify-center p-4">
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
+        <Link to="/" aria-label={t("auth.backHome")}>
+          <AppLogo />
+        </Link>
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle>{title}</CardTitle>
@@ -30,6 +38,12 @@ export function AuthCardLayout({
           </CardHeader>
           <CardContent>{children}</CardContent>
         </Card>
+        <Link
+          to="/"
+          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          {t("auth.backHome")}
+        </Link>
       </main>
     </div>
   );

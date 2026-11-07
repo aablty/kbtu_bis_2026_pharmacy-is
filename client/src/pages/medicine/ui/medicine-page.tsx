@@ -1,21 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import {
-  ArrowLeftIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PackageIcon,
-} from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PackageIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
-import { formatPrice } from "@/features/browse-catalog";
+import { categoryLabel, formatPrice } from "@/features/browse-catalog";
 import { CartControl } from "@/features/cart";
 import { catalogEndpoints } from "@/shared/api";
 import { Badge } from "@/shared/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/shared/ui/breadcrumb";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { AppShell } from "@/widgets/layout";
 
 export function MedicinePage() {
@@ -25,7 +29,14 @@ export function MedicinePage() {
     queryKey: ["medicine", medicineId],
     queryFn: () => catalogEndpoints.medicine(Number(medicineId)),
   });
+  const categories = useQuery({
+    queryKey: ["categories"],
+    queryFn: catalogEndpoints.categories,
+  });
   const data = medicine.data;
+  const category = categories.data?.find(
+    (c) => c.category_id === data?.category_id,
+  );
   const [selected, setSelected] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const images = data?.image_urls ?? [];
@@ -33,18 +44,57 @@ export function MedicinePage() {
 
   return (
     <AppShell>
-      <Link
-        to="/catalog"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-4" />
-        {t("medicine.back")}
-      </Link>
+      {data ? (
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/catalog">{t("nav.catalog")}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            {category ? (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to={`/catalog?category=${category.category_id}`}>
+                      {categoryLabel(category, i18n.language)}
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </>
+            ) : null}
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="max-w-48 truncate">
+                {data.name}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      ) : (
+        <Link to="/catalog" className="text-sm text-muted-foreground underline">
+          {t("medicine.back")}
+        </Link>
+      )}
 
       {medicine.isPending ? (
-        <p role="status" className="mt-4 text-sm text-muted-foreground">
-          {t("catalog.loading")}
-        </p>
+        <Card
+          role="status"
+          aria-busy="true"
+          aria-label={t("catalog.loading")}
+          className="mt-4 grid gap-0 overflow-hidden p-0 md:grid-cols-3"
+        >
+          <div className="p-4 md:col-span-2 md:p-6">
+            <Skeleton className="aspect-square w-full rounded-xl md:aspect-[4/3]" />
+          </div>
+          <div className="flex flex-col gap-4 border-t p-6 md:border-t-0 md:border-l">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+        </Card>
       ) : null}
       {medicine.isError ? (
         <p role="alert" className="mt-4 text-sm text-destructive">

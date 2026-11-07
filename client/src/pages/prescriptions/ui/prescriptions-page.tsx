@@ -21,6 +21,7 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import { AppShell } from "@/widgets/layout";
 import {
   type PrescriptionFileError,
@@ -91,6 +92,15 @@ export function PrescriptionsPage() {
                 accept="image/jpeg,image/png,application/pdf"
                 onChange={onPick}
               />
+              {file ? (
+                <p className="text-sm">
+                  {file.name}
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {(file.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                </p>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 {t("prescriptions.hint")}
               </p>
@@ -128,6 +138,9 @@ export function PrescriptionsPage() {
             <p className="text-sm text-muted-foreground">
               {t("prescriptions.empty")}
             </p>
+          ) : null}
+          {prescriptions.isPending ? (
+            <SkeletonList rows={3} label={t("catalog.loading")} />
           ) : null}
           <ul className="flex flex-col divide-y rounded-2xl border">
             {prescriptions.data?.map((p) => (

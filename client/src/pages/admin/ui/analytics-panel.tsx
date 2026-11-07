@@ -136,6 +136,9 @@ export function AnalyticsPanel() {
           <CardTitle className="text-base">
             {t("analytics.revenueByDay")}
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {t("analytics.revenueCaption", { days })}
+          </p>
         </CardHeader>
         <CardContent>
           <ChartContainer config={revenueConfig} className="h-64 w-full">

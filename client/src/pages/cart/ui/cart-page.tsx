@@ -34,7 +34,8 @@ export function CartPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-[1fr_18rem]">
+        // On phones the summary is a bottom bar; the list gets bottom padding so the last row is reachable.
+        <div className="grid gap-6 pb-28 md:grid-cols-[1fr_18rem] md:pb-0">
           <ul className="flex flex-col divide-y rounded-2xl border">
             {items.map((item) => (
               <li key={item.medicine_id} className="flex gap-4 p-4">
@@ -114,8 +115,8 @@ export function CartPage() {
             ))}
           </ul>
 
-          <aside className="flex h-fit flex-col gap-4 rounded-2xl border p-4">
-            <div className="flex items-baseline justify-between">
+          <aside className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t bg-background/95 p-4 backdrop-blur-md md:static md:h-fit md:flex-col md:items-stretch md:rounded-2xl md:border md:bg-transparent md:backdrop-blur-none">
+            <div className="flex flex-col md:flex-row md:items-baseline md:justify-between">
               <span className="text-sm text-muted-foreground">
                 {t("cart.subtotal")}
               </span>
@@ -123,7 +124,7 @@ export function CartPage() {
                 {formatPrice(cartTotal(items), i18n.language)}
               </span>
             </div>
-            <Button asChild size="lg" className="w-full">
+            <Button asChild size="lg" className="w-auto md:w-full">
               <Link to="/checkout">
                 {t("cart.checkout")}
                 <ArrowRightIcon />

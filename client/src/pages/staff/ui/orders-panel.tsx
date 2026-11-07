@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
   Table,
   TableBody,
@@ -84,6 +85,24 @@ export function OrdersPanel() {
     });
   }
 
+  // Same actions in the table (desktop) and the cards (phone).
+  function actions(order: Order) {
+    return nextStatuses(order.status).map((target) => (
+      <Button
+        key={target}
+        size="sm"
+        variant={target === "cancelled" ? "outline" : "default"}
+        disabled={update.isPending}
+        onClick={() => move(order, target)}
+        aria-label={t(`order.status.${target}`)}
+        title={t(`order.status.${target}`)}
+      >
+        {target === "cancelled" ? <XIcon /> : <CheckIcon />}
+        {t(`order.status.${target}`)}
+      </Button>
+    ));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {orders.isError ? (
@@ -97,60 +116,80 @@ export function OrdersPanel() {
         </p>
       ) : null}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>#</TableHead>
-            <TableHead>{t("staff.orders.status")}</TableHead>
-            <TableHead>{t("staff.orders.total")}</TableHead>
-            <TableHead>{t("staff.orders.created")}</TableHead>
-            <TableHead className="text-right">
-              {t("staff.orders.actions")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.data?.map((order) => (
-            <TableRow key={order.order_id}>
-              <TableCell className="font-medium">
-                {order.order_id}
+      {orders.isPending ? (
+        <SkeletonList rows={4} label={t("catalog.loading")} />
+      ) : null}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>{t("staff.orders.status")}</TableHead>
+              <TableHead>{t("staff.orders.total")}</TableHead>
+              <TableHead>{t("staff.orders.created")}</TableHead>
+              <TableHead className="text-right">
+                {t("staff.orders.actions")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.data?.map((order) => (
+              <TableRow key={order.order_id}>
+                <TableCell className="font-medium">
+                  {order.order_id}
+                  {order.prescription_id ? (
+                    <span className="ml-2 text-xs text-amber-600">Rx</span>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={BADGE[order.status]}>
+                    {t(`order.status.${order.status}`)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="tabular-nums">
+                  {Number(order.total_amount).toLocaleString(i18n.language)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDateTime(order.created_at, i18n.language)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">{actions(order)}</div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ul className="flex flex-col gap-3 md:hidden">
+        {orders.data?.map((order) => (
+          <li
+            key={order.order_id}
+            className="flex flex-col gap-3 rounded-2xl border p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">
+                #{order.order_id}
                 {order.prescription_id ? (
                   <span className="ml-2 text-xs text-amber-600">Rx</span>
                 ) : null}
-              </TableCell>
-              <TableCell>
-                <Badge variant={BADGE[order.status]}>
-                  {t(`order.status.${order.status}`)}
-                </Badge>
-              </TableCell>
-              <TableCell className="tabular-nums">
+              </span>
+              <Badge variant={BADGE[order.status]}>
+                {t(`order.status.${order.status}`)}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+              <span className="font-medium tabular-nums text-foreground">
                 {Number(order.total_amount).toLocaleString(i18n.language)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDateTime(order.created_at, i18n.language)}
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-1">
-                  {nextStatuses(order.status).map((target) => (
-                    <Button
-                      key={target}
-                      size="sm"
-                      variant={target === "cancelled" ? "outline" : "default"}
-                      disabled={update.isPending}
-                      onClick={() => move(order, target)}
-                      aria-label={t(`order.status.${target}`)}
-                      title={t(`order.status.${target}`)}
-                    >
-                      {target === "cancelled" ? <XIcon /> : <CheckIcon />}
-                      {t(`order.status.${target}`)}
-                    </Button>
-                  ))}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </span>
+              <span>{formatDateTime(order.created_at, i18n.language)}</span>
+            </div>
+            {nextStatuses(order.status).length > 0 ? (
+              <div className="flex flex-wrap gap-2">{actions(order)}</div>
+            ) : null}
+          </li>
+        ))}
+      </ul>
 
       <Dialog
         open={pending !== null}
