@@ -8,6 +8,13 @@ export type {
   Supplier,
   SupplierInput,
 } from "./admin-types";
+export { analyticsEndpoints } from "./analytics-endpoints";
+export type {
+  BestSeller,
+  LowStockMedicine,
+  RevenueDay,
+  RevenueReport,
+} from "./analytics-types";
 export { authEndpoints } from "./auth-endpoints";
 export type { Locale, UserProfile, UserRole } from "./auth-types";
 export { catalogEndpoints } from "./catalog-endpoints";

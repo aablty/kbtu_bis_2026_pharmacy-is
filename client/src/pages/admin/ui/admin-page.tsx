@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
+  BarChart3Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
   FolderTreeIcon,
@@ -24,6 +25,7 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { AppShell } from "@/widgets/layout";
+import { AnalyticsPanel } from "./analytics-panel";
 import { CrudPanel, type FieldDef, type Values } from "./crud-panel";
 
 const PAGE_SIZE = 50;
@@ -35,8 +37,16 @@ export function AdminPage() {
       <h1 className="font-heading mb-6 text-2xl font-semibold">
         {t("auth.admin.title")}
       </h1>
-      <Tabs defaultValue="medicines">
+      <Tabs defaultValue="analytics">
         <TabsList>
+          <TabsTrigger
+            value="analytics"
+            aria-label={t("admin.entities.analytics")}
+            title={t("admin.entities.analytics")}
+          >
+            <BarChart3Icon />
+            {t("admin.entities.analytics")}
+          </TabsTrigger>
           <TabsTrigger
             value="medicines"
             aria-label={t("admin.entities.medicines")}
@@ -62,6 +72,9 @@ export function AdminPage() {
             {t("admin.entities.suppliers")}
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="analytics" className="mt-4">
+          <AnalyticsPanel />
+        </TabsContent>
         <TabsContent value="medicines" className="mt-4">
           <MedicinesTab />
         </TabsContent>

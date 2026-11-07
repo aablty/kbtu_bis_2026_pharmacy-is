@@ -301,7 +301,8 @@
     "entities": {
       "suppliers": "Suppliers",
       "categories": "Categories",
-      "medicines": "Medicines"
+      "medicines": "Medicines",
+      "analytics": "Analytics"
     },
     "add": "Add",
     "edit": "Edit",
@@ -332,6 +333,27 @@
       "supplier": "Supplier",
       "supplier_id": "Supplier",
       "rx": "Rx"
+    }
+  },
+  "analytics": {
+    "totalRevenue": "Revenue",
+    "topSeller": "Top seller",
+    "lowStock": "Low stock items",
+    "range": "Period",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "revenueByDay": "Revenue by day",
+    "bestSellers": "Best sellers (units)",
+    "lowStockList": "Running low",
+    "noData": "No sales in this period.",
+    "lowStockNone": "Nothing is running low.",
+    "units": "Units",
+    "days_few": "{{count}} days",
+    "days_many": "{{count}} days",
+    "level": {
+      "out": "Out of stock",
+      "very-low": "Very low",
+      "low": "Running low"
     }
   }
 }

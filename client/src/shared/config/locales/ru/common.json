@@ -301,7 +301,8 @@
     "entities": {
       "suppliers": "Поставщики",
       "categories": "Категории",
-      "medicines": "Лекарства"
+      "medicines": "Лекарства",
+      "analytics": "Аналитика"
     },
     "add": "Добавить",
     "edit": "Изменить",
@@ -332,6 +333,27 @@
       "supplier": "Поставщик",
       "supplier_id": "Поставщик",
       "rx": "Rx"
+    }
+  },
+  "analytics": {
+    "totalRevenue": "Выручка",
+    "topSeller": "Лидер продаж",
+    "lowStock": "Заканчивается",
+    "range": "Период",
+    "days_one": "{{count}} день",
+    "days_few": "{{count}} дня",
+    "days_many": "{{count}} дней",
+    "days_other": "{{count}} дня",
+    "revenueByDay": "Выручка по дням",
+    "bestSellers": "Лидеры продаж (штук)",
+    "lowStockList": "Заканчивается на складе",
+    "noData": "За этот период продаж не было.",
+    "lowStockNone": "Ничего не заканчивается.",
+    "units": "Штуки",
+    "level": {
+      "out": "Нет в наличии",
+      "very-low": "Очень мало",
+      "low": "Заканчивается"
     }
   }
 }
