@@ -10,6 +10,9 @@ const medicine = (over: Partial<Medicine> = {}): Medicine => ({
   price: "100.00",
   requires_prescription: false,
   stock_quantity: 3,
+  reorder_threshold: 0,
+  category_id: 1,
+  supplier_id: 1,
   image_urls: [],
   ...over,
 });

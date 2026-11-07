@@ -13,6 +13,9 @@ export interface Medicine {
   price: string;
   requires_prescription: boolean;
   stock_quantity: number;
+  reorder_threshold: number;
+  category_id: number;
+  supplier_id: number;
   image_urls: string[];
 }
 

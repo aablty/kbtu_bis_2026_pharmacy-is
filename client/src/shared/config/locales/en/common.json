@@ -247,5 +247,85 @@
       "size": "The file is larger than 10 MB.",
       "generic": "Could not upload the prescription. Please try again."
     }
+  },
+  "staff": {
+    "tabs": {
+      "orders": "Orders",
+      "prescriptions": "Prescriptions",
+      "pos": "Point of sale"
+    },
+    "orders": {
+      "status": "Status",
+      "total": "Total",
+      "created": "Created",
+      "actions": "Actions",
+      "pickupTitle": "Confirm pickup",
+      "pickupHint": "Ask the customer for the 6-digit code from their email.",
+      "pickupCode": "Pickup code",
+      "confirmPickup": "Complete order"
+    },
+    "prescriptions": {
+      "filter": "Filter",
+      "all": "All",
+      "customer": "Customer",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectTitle": "Reject prescription",
+      "reason": "Reason for rejection"
+    },
+    "pos": {
+      "search": "Search medicines",
+      "add": "Add to sale",
+      "stock": "In stock",
+      "sale": "Current sale",
+      "empty": "Add medicines from the search.",
+      "customer": "Customer ID (optional)",
+      "quantity": "Quantity",
+      "submit": "Record sale",
+      "selling": "Recording…",
+      "receipt": "Sale #{{id}} recorded · {{total}}",
+      "recent": "Recent sales"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "pickup": "Check the pickup code and try again."
+    }
+  },
+  "admin": {
+    "entities": {
+      "suppliers": "Suppliers",
+      "categories": "Categories",
+      "medicines": "Medicines"
+    },
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "confirmDelete": "Delete this record?",
+    "none": "—",
+    "yes": "Yes",
+    "no": "No",
+    "errors": {
+      "generic": "Could not save. Please check the fields and try again.",
+      "inUse": "This record is still in use and can't be deleted."
+    },
+    "fields": {
+      "name": "Name",
+      "contact_phone": "Phone",
+      "address": "Address",
+      "parent": "Parent",
+      "parent_id": "Parent category",
+      "manufacturer": "Manufacturer",
+      "dosage_form": "Dosage form",
+      "price": "Price",
+      "requires_prescription": "Requires prescription",
+      "stock_quantity": "Stock",
+      "reorder_threshold": "Reorder threshold",
+      "category": "Category",
+      "category_id": "Category",
+      "supplier": "Supplier",
+      "supplier_id": "Supplier",
+      "rx": "Rx"
+    }
   }
 }
