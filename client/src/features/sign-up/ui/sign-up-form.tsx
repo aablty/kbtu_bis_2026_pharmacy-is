@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { authEndpoints, authErrorKey } from "@/shared/api";
-import { toApiLocale } from "@/shared/lib/locale";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
 import { FormErrorAlert } from "@/shared/ui/form-error-alert";
@@ -14,7 +13,7 @@ import { Spinner } from "@/shared/ui/spinner";
 import { type SignUpValues, signUpSchema } from "../model/sign-up-schema";
 
 export function SignUpForm() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const schema = useMemo(() => signUpSchema(t), [t]);
@@ -31,7 +30,6 @@ export function SignUpForm() {
         email: values.email,
         password: values.password,
         full_name: values.fullName,
-        preferred_locale: toApiLocale(i18n.language),
       });
       navigate(`/verify-email?email=${encodeURIComponent(values.email)}`, {
         replace: true,

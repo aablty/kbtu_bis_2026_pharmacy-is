@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from src.models.enums import Locale, UserRole
+from src.models.enums import UserRole
 
 
 class _NormalizesEmail(BaseModel):
@@ -17,7 +17,6 @@ class RegisterRequest(_NormalizesEmail):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=120)
-    preferred_locale: Locale = Locale.EN
 
     @field_validator("full_name", mode="before")
     @classmethod
@@ -74,7 +73,15 @@ class UserProfile(BaseModel):
     email: EmailStr
     full_name: str | None
     role: UserRole
-    preferred_locale: Locale
     is_active: bool
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = Field(default=None, max_length=120)
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)

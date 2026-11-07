@@ -174,3 +174,11 @@ class PickupCodeRequiredError(DomainError):
 
 class NotificationNotFoundError(DomainError):
     pass
+
+
+class InvalidCurrentPasswordError(DomainError):
+    pass
+
+
+class PasswordNotSetError(DomainError):
+    """A Google-only account has no password to verify or change."""

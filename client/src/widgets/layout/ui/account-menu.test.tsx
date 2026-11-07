@@ -12,7 +12,6 @@ const baseUser: UserProfile = {
   email: "ada@example.com",
   full_name: "Ada Lovelace",
   role: "customer",
-  preferred_locale: "en",
   is_active: true,
 };
 

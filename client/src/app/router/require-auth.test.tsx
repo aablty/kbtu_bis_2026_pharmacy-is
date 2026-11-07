@@ -27,7 +27,6 @@ function setUser(role: "admin" | "customer") {
     email: "a@example.com",
     full_name: "A Test",
     role,
-    preferred_locale: "en",
     is_active: true,
   });
 }

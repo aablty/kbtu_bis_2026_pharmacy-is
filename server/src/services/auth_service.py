@@ -8,7 +8,9 @@ from src.core.exceptions import (
     EmailAlreadyRegisteredError,
     EmailNotVerifiedError,
     InvalidCredentialsError,
+    InvalidCurrentPasswordError,
     OtpCooldownError,
+    PasswordNotSetError,
     UserNotFoundError,
 )
 from src.core.google_oauth import verify_google_id_token
@@ -19,7 +21,7 @@ from src.core.security import (
     hash_password,
     verify_password,
 )
-from src.models.enums import Locale, OtpPurpose, UserRole
+from src.models.enums import OtpPurpose, UserRole
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
 from src.schemas.auth import TokenPair
@@ -32,9 +34,7 @@ class AuthService:
         self._users = UserRepository(session)
         self._otp = otp_service
 
-    async def register(
-        self, email: str, password: str, full_name: str, preferred_locale: Locale
-    ) -> User:
+    async def register(self, email: str, password: str, full_name: str) -> User:
         if await self._users.get_by_email(email) is not None:
             raise EmailAlreadyRegisteredError(email)
 
@@ -43,7 +43,6 @@ class AuthService:
             password_hash=hash_password(password),
             full_name=full_name,
             role=UserRole.CUSTOMER,
-            preferred_locale=preferred_locale,
         )
         self._users.add(user)
         await self._session.flush()
@@ -145,6 +144,27 @@ class AuthService:
             access_token=create_access_token(user.user_id, user.role.value),
             refresh_token=create_refresh_token(user.user_id, user.role.value),
         )
+
+    async def update_profile(self, user: User, fields: dict) -> User:
+        """Only the fields listed here can be changed through the profile endpoint."""
+        for key in ("full_name",):
+            if key in fields:
+                value = fields[key]
+                if key == "full_name" and value is not None:
+                    value = value.strip() or None
+                setattr(user, key, value)
+        await self._session.commit()
+        return user
+
+    async def change_password(
+        self, user: User, current_password: str, new_password: str
+    ) -> None:
+        if user.password_hash is None:
+            raise PasswordNotSetError()
+        if not verify_password(current_password, user.password_hash):
+            raise InvalidCurrentPasswordError()
+        user.password_hash = hash_password(new_password)
+        await self._session.commit()
 
     async def request_password_reset(self, email: str) -> None:
         user = await self._users.get_by_email(email)

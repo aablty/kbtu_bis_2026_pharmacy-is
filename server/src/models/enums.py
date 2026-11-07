@@ -8,11 +8,6 @@ class UserRole(StrEnum):
     CUSTOMER = "customer"
 
 
-class Locale(StrEnum):
-    EN = "en"
-    RU = "ru"
-
-
 class OtpPurpose(StrEnum):
     EMAIL_VERIFICATION = "email_verification"
     PASSWORD_RESET = "password_reset"

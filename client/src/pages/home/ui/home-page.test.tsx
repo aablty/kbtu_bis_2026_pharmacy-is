@@ -42,7 +42,6 @@ describe("HomePage", () => {
       email: "a@example.com",
       full_name: "A Test",
       role: "customer",
-      preferred_locale: "en",
       is_active: true,
     });
 

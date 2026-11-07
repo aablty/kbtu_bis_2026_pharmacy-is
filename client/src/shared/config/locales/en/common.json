@@ -366,5 +366,37 @@
   },
   "menu": {
     "account": "Account"
+  },
+  "profile": {
+    "summary": {
+      "title": "Overview",
+      "orders": "Orders",
+      "spent": "Total spent",
+      "approved": "Approved prescriptions",
+      "pending": "Awaiting review",
+      "last": "Last order",
+      "none": "You have no orders yet."
+    },
+    "personal": "Personal details",
+    "password": "Change password",
+    "save": "Save changes",
+    "saved": "Saved.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat new password",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed.",
+    "validation": {
+      "nameMax": "Name must be 120 characters or fewer.",
+      "passwordMax": "Password must be 128 characters or fewer.",
+      "mismatch": "The passwords do not match."
+    },
+    "errors": {
+      "wrongPassword": "The current password is incorrect.",
+      "noPassword": "This account signs in with Google and has no password yet. Use “Forgot password” to set one.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "emailHint": "Your sign-in email. Contact support to change it.",
+    "passwordHint": "At least 8 characters."
   }
 }

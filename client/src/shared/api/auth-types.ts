@@ -1,7 +1,5 @@
 export type UserRole = "admin" | "pharmacist" | "cashier" | "customer";
 
-export type Locale = "en" | "ru";
-
 export interface TokenPair {
   access_token: string;
   refresh_token: string;
@@ -13,7 +11,6 @@ export interface UserProfile {
   email: string;
   full_name: string | null;
   role: UserRole;
-  preferred_locale: Locale;
   is_active: boolean;
 }
 

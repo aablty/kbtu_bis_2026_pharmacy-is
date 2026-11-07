@@ -1,5 +1,4 @@
 import type {
-  Locale,
   MessageResponse,
   RegisterResponse,
   TokenPair,
@@ -8,12 +7,7 @@ import type {
 import { apiClient } from "./client";
 
 export const authEndpoints = {
-  register: (body: {
-    email: string;
-    password: string;
-    full_name: string;
-    preferred_locale: Locale;
-  }) =>
+  register: (body: { email: string; password: string; full_name: string }) =>
     apiClient
       .post<RegisterResponse>("/auth/register", body)
       .then((r) => r.data),
