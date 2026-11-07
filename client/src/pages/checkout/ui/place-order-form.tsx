@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useCartStore } from "@/features/cart";
 import {
   type OrderCreate,
@@ -192,7 +192,10 @@ export function PlaceOrderForm({
             </NativeSelect>
             {prescriptions.isSuccess && approved.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                {t("checkout.prescriptionNone")}
+                {t("checkout.prescriptionNone")}{" "}
+                <Link to="/prescriptions" className="underline">
+                  {t("checkout.uploadPrescription")}
+                </Link>
               </p>
             ) : null}
             <FieldError errors={[errors.prescriptionId]} />

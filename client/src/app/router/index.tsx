@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from "@/pages/forgot-password";
 import { HomePage } from "@/pages/home";
 import { MedicinePage } from "@/pages/medicine";
 import { OrderPage } from "@/pages/order";
+import { PrescriptionsPage } from "@/pages/prescriptions";
 import { ProfilePage } from "@/pages/profile";
 import { ResetPasswordPage } from "@/pages/reset-password";
 import { SignInPage } from "@/pages/sign-in";
@@ -36,7 +37,10 @@ export const router = createBrowserRouter([
   },
   {
     element: <RequireAuth roles={["customer"]} />,
-    children: [{ path: "/checkout", element: <CheckoutPage /> }],
+    children: [
+      { path: "/checkout", element: <CheckoutPage /> },
+      { path: "/prescriptions", element: <PrescriptionsPage /> },
+    ],
   },
   {
     element: <RequireAuth roles={STAFF_ROLES} />,

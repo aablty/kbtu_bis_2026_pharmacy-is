@@ -37,6 +37,11 @@ export function AccountMenu({ user }: { user: UserProfile }) {
         <DropdownMenuItem asChild>
           <Link to="/profile">{t("auth.profile.title")}</Link>
         </DropdownMenuItem>
+        {user.role === "customer" ? (
+          <DropdownMenuItem asChild>
+            <Link to="/prescriptions">{t("prescriptions.title")}</Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <div className="flex flex-col justify-between gap-2 px-2 text-sm">
           {/*<span className="text-muted-foreground">{t("theme.label")}</span>*/}

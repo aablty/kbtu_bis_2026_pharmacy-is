@@ -9,7 +9,7 @@ const OPTIONS = [
   { value: "system", key: "theme.system", Icon: MonitorIcon },
 ] as const;
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle() {
   const { t } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);

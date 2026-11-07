@@ -197,7 +197,8 @@
       "outOfStock": "Some items no longer have enough stock. Update your cart and try again.",
       "prescription": "This prescription can't be used for the order.",
       "generic": "Could not place the order. Please try again."
-    }
+    },
+    "uploadPrescription": "Upload one"
   },
   "order": {
     "title": "Order #{{id}}",
@@ -223,5 +224,28 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet."
+  },
+  "prescriptions": {
+    "title": "Prescriptions",
+    "upload": "Upload a prescription",
+    "pick": "Prescription file",
+    "hint": "JPEG, PNG or PDF, up to 10 MB.",
+    "submit": "Upload",
+    "uploading": "Uploading…",
+    "uploaded": "Uploaded. A pharmacist will review it.",
+    "mine": "Your prescriptions",
+    "empty": "You haven't uploaded any prescriptions yet.",
+    "reason": "Reason: {{reason}}",
+    "open": "Open file",
+    "status": {
+      "pending": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "errors": {
+      "type": "Use a JPEG, PNG or PDF file.",
+      "size": "The file is larger than 10 MB.",
+      "generic": "Could not upload the prescription. Please try again."
+    }
   }
 }
