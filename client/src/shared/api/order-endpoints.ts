@@ -9,6 +9,8 @@ export const orderEndpoints = {
         headers: { "Idempotency-Key": idempotencyKey },
       })
       .then((r) => r.data),
+  /** Customers get their own orders; staff get every order. */
+  list: () => apiClient.get<Order[]>("/orders").then((r) => r.data),
   get: (orderId: number) =>
     apiClient.get<Order>(`/orders/${orderId}`).then((r) => r.data),
 };

@@ -87,6 +87,7 @@ export function PlaceOrderForm({
       useCartStore.getState().clear();
       void queryClient.invalidateQueries({ queryKey: ["medicines"] });
       void queryClient.invalidateQueries({ queryKey: ["medicine"] });
+      void queryClient.invalidateQueries({ queryKey: ["orders"] });
     } catch (error) {
       setServerError(t(placeOrderErrorKey(error)));
     }

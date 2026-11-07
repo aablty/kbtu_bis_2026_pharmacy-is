@@ -1,1 +1,1 @@
-export { LocaleToggle } from "./ui/locale-toggle";
+export { LOCALE_LABELS, LocaleToggle } from "./ui/locale-toggle";

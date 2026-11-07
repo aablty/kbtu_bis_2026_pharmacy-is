@@ -11,15 +11,55 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 
-const LOCALE_LABELS: Record<Locale, string> = {
+export const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   ru: "Русский",
 };
 
-export function LocaleToggle() {
+/** `icon` for the header; `row` for the mobile menu, showing the label and current language. */
+export function LocaleToggle({
+  variant = "icon",
+}: {
+  variant?: "icon" | "row";
+}) {
   const { t } = useTranslation();
   const locale = useLocaleStore((state) => state.locale);
   const setLocale = useLocaleStore((state) => state.setLocale);
+
+  const content = (
+    <DropdownMenuContent align={variant === "row" ? "start" : "end"}>
+      <DropdownMenuRadioGroup
+        value={locale}
+        onValueChange={(value) => setLocale(value as Locale)}
+      >
+        {(Object.keys(LOCALE_LABELS) as Locale[]).map((value) => (
+          <DropdownMenuRadioItem key={value} value={value}>
+            {LOCALE_LABELS[value]}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuContent>
+  );
+
+  if (variant === "row") {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="h-11 w-full justify-start gap-3 px-3 text-sm font-medium"
+          >
+            <LanguagesIcon className="size-5 text-muted-foreground" />
+            {t("locale.label")}
+            <span className="ml-auto text-muted-foreground">
+              {LOCALE_LABELS[locale]}
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        {content}
+      </DropdownMenu>
+    );
+  }
 
   return (
     <DropdownMenu>
@@ -33,18 +73,7 @@ export function LocaleToggle() {
         </TooltipTrigger>
         <TooltipContent>{t("locale.label")}</TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup
-          value={locale}
-          onValueChange={(value) => setLocale(value as Locale)}
-        >
-          {(Object.keys(LOCALE_LABELS) as Locale[]).map((value) => (
-            <DropdownMenuRadioItem key={value} value={value}>
-              {LOCALE_LABELS[value]}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
+      {content}
     </DropdownMenu>
   );
 }

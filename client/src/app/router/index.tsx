@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from "@/pages/forgot-password";
 import { HomePage } from "@/pages/home";
 import { MedicinePage } from "@/pages/medicine";
 import { OrderPage } from "@/pages/order";
+import { OrdersPage } from "@/pages/orders";
 import { PrescriptionsPage } from "@/pages/prescriptions";
 import { ProfilePage } from "@/pages/profile";
 import { ResetPasswordPage } from "@/pages/reset-password";
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
     element: <RequireAuth roles={["customer"]} />,
     children: [
       { path: "/checkout", element: <CheckoutPage /> },
+      { path: "/orders", element: <OrdersPage /> },
       { path: "/prescriptions", element: <PrescriptionsPage /> },
     ],
   },

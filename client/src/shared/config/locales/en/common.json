@@ -355,5 +355,15 @@
       "very-low": "Very low",
       "low": "Running low"
     }
+  },
+  "orders": {
+    "title": "Orders",
+    "error": "Could not load your orders.",
+    "empty": "You have no orders yet.",
+    "number": "Order #{{id}}",
+    "itemsCount": "{{count}} items"
+  },
+  "menu": {
+    "account": "Account"
   }
 }

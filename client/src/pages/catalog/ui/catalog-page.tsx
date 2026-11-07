@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
 import {
   CheckCircle2Icon,
+  ChevronDownIcon,
   FileTextIcon,
   SearchIcon,
   XIcon,
@@ -12,14 +13,23 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import {
   buildCategoryTree,
   CategoryTreeNav,
+  categoryLabel,
   MedicineCard,
   PageNumbers,
 } from "@/features/browse-catalog";
-import { CartControl } from "@/features/cart";
-import { catalogEndpoints } from "@/shared/api";
+import { CartControl, CartFab } from "@/features/cart";
+import { type Category, catalogEndpoints } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/shared/ui/sheet";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Toggle } from "@/shared/ui/toggle";
 import { AppShell } from "@/widgets/layout";
@@ -36,7 +46,7 @@ const numberParam = (value: string | null) =>
     : undefined;
 
 export function CatalogPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const q = params.get("q") ?? "";
@@ -142,6 +152,13 @@ export function CatalogPage() {
     navigate(hrefFor({ q: q || null }));
   }
 
+  const selectedCategory = categories.data?.find(
+    (c) => c.category_id === categoryId,
+  );
+  const selectedCategoryLabel = selectedCategory
+    ? categoryLabel(selectedCategory, i18n.language)
+    : t("catalog.allCategories");
+
   const total = medicines.data?.total ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -151,37 +168,48 @@ export function CatalogPage() {
         {t("catalog.title")}
       </h1>
       <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="shrink-0 lg:w-60">
+        <aside className="hidden shrink-0 lg:block lg:w-60">
           <p className="mb-2 text-sm font-medium text-muted-foreground">
             {t("catalog.categories")}
           </p>
-          <nav
-            aria-label={t("catalog.categories")}
-            className="flex flex-col gap-0.5"
-          >
-            <Link
-              to={hrefFor({ category: null })}
-              aria-current={categoryId === null ? "page" : undefined}
-              className={cn(
-                "block rounded-md py-1 pr-2 pl-9 text-sm hover:bg-accent",
-                categoryId === null
-                  ? "bg-accent font-semibold text-primary"
-                  : "text-muted-foreground",
-              )}
-            >
-              {t("catalog.allCategories")}
-            </Link>
-            {categories.data ? (
-              <CategoryTreeNav
-                nodes={buildCategoryTree(categories.data)}
-                selectedId={categoryId}
-                hrefFor={(id) => hrefFor({ category: String(id) })}
-              />
-            ) : null}
-          </nav>
+          <CategoryNav
+            categories={categories.data}
+            categoryId={categoryId}
+            hrefFor={hrefFor}
+          />
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between lg:hidden"
+              >
+                <span className="truncate">{selectedCategoryLabel}</span>
+                <ChevronDownIcon />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="bottom"
+              className="max-h-[80svh] gap-0 overflow-y-auto rounded-t-2xl"
+            >
+              <SheetHeader>
+                <SheetTitle>{t("catalog.categories")}</SheetTitle>
+              </SheetHeader>
+              <div className="px-4 pb-6">
+                <SheetClose asChild>
+                  <div>
+                    <CategoryNav
+                      categories={categories.data}
+                      categoryId={categoryId}
+                      hrefFor={hrefFor}
+                    />
+                  </div>
+                </SheetClose>
+              </div>
+            </SheetContent>
+          </Sheet>
           <search>
             <form onSubmit={onSearch} className="flex gap-2">
               <Label htmlFor="catalog-search" className="sr-only">
@@ -296,10 +324,7 @@ export function CatalogPage() {
             </p>
           ) : null}
           {medicines.isPending ? (
-            <ul
-              aria-busy
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
-            >
+            <ul aria-busy className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {Array.from({ length: 6 }, (_, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
                 <li key={i}>
@@ -317,7 +342,7 @@ export function CatalogPage() {
           {medicines.data && medicines.data.items.length > 0 ? (
             <ul
               className={cn(
-                "grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-2 md:grid-cols-3",
+                "grid grid-cols-2 gap-3 transition-opacity md:grid-cols-3",
                 medicines.isPlaceholderData && "opacity-60",
               )}
             >
@@ -337,6 +362,42 @@ export function CatalogPage() {
           ) : null}
         </section>
       </div>
+      <CartFab />
     </AppShell>
+  );
+}
+
+function CategoryNav({
+  categories,
+  categoryId,
+  hrefFor,
+}: {
+  categories: Category[] | undefined;
+  categoryId: number | null;
+  hrefFor: (change: Record<string, string | null>) => string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <nav aria-label={t("catalog.categories")} className="flex flex-col gap-0.5">
+      <Link
+        to={hrefFor({ category: null })}
+        aria-current={categoryId === null ? "page" : undefined}
+        className={cn(
+          "block rounded-md py-2 pr-2 pl-9 text-sm hover:bg-accent",
+          categoryId === null
+            ? "bg-accent font-semibold text-primary"
+            : "text-muted-foreground",
+        )}
+      >
+        {t("catalog.allCategories")}
+      </Link>
+      {categories ? (
+        <CategoryTreeNav
+          nodes={buildCategoryTree(categories)}
+          selectedId={categoryId}
+          hrefFor={(id) => hrefFor({ category: String(id) })}
+        />
+      ) : null}
+    </nav>
   );
 }

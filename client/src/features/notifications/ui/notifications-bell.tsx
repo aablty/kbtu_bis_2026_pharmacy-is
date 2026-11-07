@@ -13,7 +13,11 @@ import {
   useNotifications,
 } from "../model/use-notifications";
 
-export function NotificationsBell() {
+export function NotificationsBell({
+  variant = "icon",
+}: {
+  variant?: "icon" | "row";
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useSessionStore((state) => state.user);
@@ -33,19 +37,34 @@ export function NotificationsBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          aria-label={`${t("notifications.title")} (${unread})`}
-        >
-          <BellIcon />
-          {unread > 0 ? (
-            <span className="absolute -top-0.5 -right-0.5 flex min-w-5 justify-center rounded-full bg-primary px-1 text-xs leading-5 text-primary-foreground tabular-nums">
-              {unread}
-            </span>
-          ) : null}
-        </Button>
+        {variant === "row" ? (
+          <Button
+            variant="ghost"
+            className="h-11 w-full justify-start gap-3 px-3 text-sm font-medium"
+          >
+            <BellIcon className="size-5 text-muted-foreground" />
+            {t("notifications.title")}
+            {unread > 0 ? (
+              <span className="ml-auto flex min-w-5 justify-center rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground tabular-nums">
+                {unread}
+              </span>
+            ) : null}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label={`${t("notifications.title")} (${unread})`}
+          >
+            <BellIcon />
+            {unread > 0 ? (
+              <span className="absolute -top-0.5 -right-0.5 flex min-w-5 justify-center rounded-full bg-primary px-1 text-xs leading-5 text-primary-foreground tabular-nums">
+                {unread}
+              </span>
+            ) : null}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="border-b px-4 py-3 text-sm font-medium">

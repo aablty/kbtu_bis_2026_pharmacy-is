@@ -14,59 +14,69 @@ import {
   SheetTrigger,
 } from "@/shared/ui/sheet";
 
-/** `children` are the nav items; `account` (profile menu) sits last, after the language switcher. */
+/**
+ * Sticky header with a blurred backdrop. `children` are the page nav items (left, after the logo);
+ * `actions` are icon buttons on the right; `account` is the profile dropdown (guests get the language switch instead).
+ * `mobileMenu` replaces the nav and account block inside the mobile sheet; `mobileActions` sit left of the menu button.
+ */
 export function TopBar({
   children,
+  actions,
   account,
+  mobileMenu,
+  mobileActions,
 }: {
   children?: ReactNode;
+  actions?: ReactNode;
   account?: ReactNode;
+  mobileMenu?: ReactNode;
+  mobileActions?: ReactNode;
 }) {
   const { t } = useTranslation();
 
   return (
-    <header className="border-b">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4">
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
+      <div className="mx-auto flex h-16 max-w-5xl items-center gap-4 px-4">
         <Link to="/" className="shrink-0">
           <AppLogo />
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-end gap-4 md:flex">
-          {children}
-          <div className="flex items-center gap-2">
-            <LocaleToggle />
-            {account}
-          </div>
-        </nav>
+        <nav className="hidden items-center gap-1 md:flex">{children}</nav>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              aria-label={t("nav.menu")}
-            >
-              <MenuIcon />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right">
-            <SheetHeader>
-              <SheetTitle>
-                <AppLogo />
-              </SheetTitle>
-            </SheetHeader>
-            <div className="flex flex-col gap-4 px-4">
-              <SheetClose asChild>
-                <div className="flex flex-col gap-3">{children}</div>
-              </SheetClose>
-              <div className="flex items-center gap-2 border-t pt-4">
-                <LocaleToggle />
-                {account}
+        <div className="ml-auto hidden items-center gap-1 md:flex">
+          {actions}
+          {account ?? <LocaleToggle />}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1 md:hidden">
+          {mobileActions}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label={t("nav.menu")}>
+                <MenuIcon />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>
+                  <AppLogo />
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+                {mobileMenu ?? (
+                  <div className="flex flex-col gap-3">
+                    <SheetClose asChild>
+                      <div className="flex flex-col gap-3">{children}</div>
+                    </SheetClose>
+                    <div className="border-t pt-4">
+                      <LocaleToggle variant="row" />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );
