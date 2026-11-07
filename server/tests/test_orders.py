@@ -718,4 +718,5 @@ async def test_order_history_and_status_notification_reach_the_customer(
     resp = await client.get("/notifications", headers=auth_headers(customer_token))
     related = [n for n in resp.json() if n["related_id"] == order_id]
     assert {n["type"] for n in related} == {"order_status"}
+    assert {n["message_key"] for n in related} == {"order_status"}
     assert len(related) == 2

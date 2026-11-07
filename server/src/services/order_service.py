@@ -282,6 +282,8 @@ class OrderService:
             NotificationType.ORDER_STATUS,
             f"Your order #{order.order_id} is now {new_status.value}.",
             related_id=order.order_id,
+            message_key="order_status",
+            message_params={"order_id": order.order_id, "status": new_status.value},
         )
         await self._session.commit()
         return order

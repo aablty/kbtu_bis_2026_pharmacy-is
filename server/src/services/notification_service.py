@@ -35,6 +35,8 @@ class NotificationService:
         message: str,
         *,
         related_id: int | None = None,
+        message_key: str | None = None,
+        message_params: dict | None = None,
     ) -> None:
         """Queues a notification on the caller's own session/transaction -
         does not flush or commit, since this is always called from inside
@@ -42,7 +44,12 @@ class NotificationService:
         SaleService, PrescriptionService)."""
         self._notifications.add(
             Notification(
-                user_id=user_id, type=type_, message=message, related_id=related_id
+                user_id=user_id,
+                type=type_,
+                message=message,
+                related_id=related_id,
+                message_key=message_key,
+                message_params=message_params,
             )
         )
 
@@ -87,6 +94,12 @@ class NotificationService:
                 NotificationType.LOW_STOCK,
                 message,
                 related_id=medicine.medicine_id,
+                message_key="low_stock",
+                message_params={
+                    "name": medicine.name,
+                    "stock": medicine.stock_quantity,
+                    "threshold": medicine.reorder_threshold,
+                },
             )
 
     async def get(self, notification_id: int) -> Notification:

@@ -223,7 +223,13 @@
   },
   "notifications": {
     "title": "Уведомления",
-    "empty": "Уведомлений пока нет."
+    "empty": "Уведомлений пока нет.",
+    "messages": {
+      "order_status": "Статус заказа №{{order_id}}: {{status}}.",
+      "low_stock": "Мало на складе: {{name}}, осталось {{stock}} (порог заказа {{threshold}}).",
+      "prescription_approved": "Ваш рецепт одобрен.",
+      "prescription_rejected": "Ваш рецепт отклонён. Причина: {{reason}}"
+    }
   },
   "prescriptions": {
     "title": "Рецепты",

@@ -7,6 +7,7 @@ import { formatDateTime } from "@/shared/lib/format-date";
 import { Button } from "@/shared/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { notificationTarget } from "../model/target";
+import { notificationText } from "../model/text";
 import {
   useMarkNotificationRead,
   useNotifications,
@@ -65,7 +66,7 @@ export function NotificationsBell() {
                 >
                   <PackageIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span>{notification.message}</span>
+                    <span>{notificationText(notification, t)}</span>
                     <time
                       dateTime={notification.created_at}
                       className="text-xs text-muted-foreground"

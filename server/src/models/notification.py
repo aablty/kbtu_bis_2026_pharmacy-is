@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -23,6 +23,10 @@ class Notification(Base):
         nullable=False,
     )
     message: Mapped[str] = mapped_column(String(500), nullable=False)
+    # Clients localize from message_key + message_params; `message` is the English
+    # fallback, and is all that old rows have.
+    message_key: Mapped[str | None] = mapped_column(String(40))
+    message_params: Mapped[dict | None] = mapped_column(JSON)
     # Opaque id of the entity this notification is about (order_id,
     # prescription_id, medicine_id) - type-specific, nullable, reserved for
     # a future frontend deep-link; nothing reads it yet.

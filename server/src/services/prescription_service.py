@@ -82,6 +82,10 @@ class PrescriptionService:
             NotificationType.PRESCRIPTION_STATUS,
             message,
             related_id=prescription.prescription_id,
+            message_key=(
+                "prescription_approved" if approve else "prescription_rejected"
+            ),
+            message_params={"reason": reason or ""} if not approve else None,
         )
 
         await self._session.commit()

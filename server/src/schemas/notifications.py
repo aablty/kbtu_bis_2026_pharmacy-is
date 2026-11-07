@@ -9,6 +9,8 @@ class NotificationResponse(BaseModel):
     notification_id: int
     type: NotificationType
     message: str
+    message_key: str | None
+    message_params: dict | None
     related_id: int | None
     read_at: datetime | None
     created_at: datetime

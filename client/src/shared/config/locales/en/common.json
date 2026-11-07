@@ -223,7 +223,13 @@
   },
   "notifications": {
     "title": "Notifications",
-    "empty": "No notifications yet."
+    "empty": "No notifications yet.",
+    "messages": {
+      "order_status": "Your order #{{order_id}} is now {{status}}.",
+      "low_stock": "Low stock: {{name}} has {{stock}} left (reorder threshold {{threshold}}).",
+      "prescription_approved": "Your prescription has been approved.",
+      "prescription_rejected": "Your prescription has been rejected. Reason: {{reason}}"
+    }
   },
   "prescriptions": {
     "title": "Prescriptions",
