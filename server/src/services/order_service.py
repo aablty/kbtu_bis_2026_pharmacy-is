@@ -25,6 +25,7 @@ from src.models.enums import (
 )
 from src.models.order import Order
 from src.models.order_item import OrderItem
+from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
@@ -178,6 +179,14 @@ class OrderService:
 
     async def get_items(self, order_id: int) -> list[OrderItem]:
         return await self._orders.get_items(order_id)
+
+    async def get_history(self, order_id: int) -> list[OrderStatusHistory]:
+        return await self._orders.get_history(order_id)
+
+    async def get_history_for_orders(
+        self, order_ids: list[int]
+    ) -> list[OrderStatusHistory]:
+        return await self._orders.get_history_for_orders(order_ids)
 
     async def get_payment(self, order_id: int) -> Payment | None:
         return await self._payments.get_latest_for_order(order_id)

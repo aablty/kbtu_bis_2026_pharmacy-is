@@ -20,12 +20,14 @@ from src.core.exceptions import (
 from src.models.enums import UserRole
 from src.models.order import Order
 from src.models.order_item import OrderItem
+from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
 from src.routers.deps import CurrentUser, get_order_service, require_role
 from src.schemas.orders import (
     OrderCreate,
     OrderItemResponse,
     OrderResponse,
+    OrderStatusHistoryResponse,
     OrderStatusUpdateRequest,
     PaymentResponse,
 )
@@ -38,7 +40,10 @@ _STAFF_ROLES = (UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CASHIER)
 
 
 def _to_response(
-    order: Order, items: list[OrderItem], payment: Payment | None
+    order: Order,
+    items: list[OrderItem],
+    payment: Payment | None,
+    history: list[OrderStatusHistory],
 ) -> OrderResponse:
     return OrderResponse(
         order_id=order.order_id,
@@ -51,6 +56,7 @@ def _to_response(
         created_at=order.created_at,
         items=[OrderItemResponse.model_validate(i) for i in items],
         payment=PaymentResponse.model_validate(payment) if payment else None,
+        history=[OrderStatusHistoryResponse.model_validate(h) for h in history],
     )
 
 
@@ -103,7 +109,8 @@ async def place_order(
         ) from None
     items = await service.get_items(order.order_id)
     payment = await service.get_payment(order.order_id)
-    return _to_response(order, items, payment)
+    history = await service.get_history(order.order_id)
+    return _to_response(order, items, payment, history)
 
 
 @router.get("", response_model=list[OrderResponse])
@@ -124,10 +131,18 @@ async def list_orders(
     payment_by_order = {
         p.order_id: p for p in await service.get_payments_for_orders(order_ids)
     }
+    history_by_order: dict[int, list[OrderStatusHistory]] = {
+        oid: [] for oid in order_ids
+    }
+    for entry in await service.get_history_for_orders(order_ids):
+        history_by_order[entry.order_id].append(entry)
 
     return [
         _to_response(
-            order, items_by_order[order.order_id], payment_by_order.get(order.order_id)
+            order,
+            items_by_order[order.order_id],
+            payment_by_order.get(order.order_id),
+            history_by_order[order.order_id],
         )
         for order in orders
     ]
@@ -148,7 +163,8 @@ async def get_order(
 
     items = await service.get_items(order_id)
     payment = await service.get_payment(order_id)
-    return _to_response(order, items, payment)
+    history = await service.get_history(order.order_id)
+    return _to_response(order, items, payment, history)
 
 
 @router.patch(
@@ -188,4 +204,5 @@ async def update_order_status(
         ) from None
     items = await service.get_items(order_id)
     payment = await service.get_payment(order_id)
-    return _to_response(order, items, payment)
+    history = await service.get_history(order.order_id)
+    return _to_response(order, items, payment, history)

@@ -51,6 +51,13 @@ class PaymentResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class OrderStatusHistoryResponse(BaseModel):
+    status: OrderStatus
+    changed_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class OrderResponse(BaseModel):
     order_id: int
     customer_id: int
@@ -62,6 +69,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     items: list[OrderItemResponse]
     payment: PaymentResponse | None
+    history: list[OrderStatusHistoryResponse] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

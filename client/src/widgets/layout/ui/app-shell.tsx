@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
 import { CartLink } from "@/features/cart";
+import { NotificationsBell } from "@/features/notifications";
 import { useSessionStore } from "@/shared/auth";
 import { AccountMenu } from "./account-menu";
 import { TopBar } from "./top-bar";
@@ -38,6 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <NavItem to="/catalog" label={t("nav.catalog")} />
         {isStaff ? <NavItem to="/staff" label={t("auth.staff.title")} /> : null}
         {isAdmin ? <NavItem to="/admin" label={t("auth.admin.title")} /> : null}
+        <NotificationsBell />
         <CartLink />
         {user ? <AccountMenu user={user} /> : null}
       </TopBar>

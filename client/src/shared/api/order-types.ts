@@ -30,6 +30,11 @@ export interface Payment {
   paid_at: string | null;
 }
 
+export interface OrderStatusHistory {
+  status: OrderStatus;
+  changed_at: string;
+}
+
 export interface Order {
   order_id: number;
   status: OrderStatus;
@@ -40,4 +45,5 @@ export interface Order {
   created_at: string;
   items: OrderItem[];
   payment: Payment | null;
+  history: OrderStatusHistory[];
 }

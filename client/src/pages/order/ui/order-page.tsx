@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router";
 import { formatPrice } from "@/features/browse-catalog";
 import { orderEndpoints } from "@/shared/api";
+import { formatDateTime } from "@/shared/lib/format-date";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { AppShell } from "@/widgets/layout";
@@ -15,6 +16,12 @@ export function OrderPage() {
   const order = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => orderEndpoints.get(Number(orderId)),
+    // Keep the timeline live until the order reaches a final state.
+    refetchInterval: (query) =>
+      query.state.data &&
+      !["completed", "cancelled"].includes(query.state.data.status)
+        ? 15_000
+        : false,
   });
   const data = order.data;
 
@@ -84,6 +91,44 @@ export function OrderPage() {
                 {formatPrice(data.total_amount, i18n.language)}
               </span>
             </div>
+            <section className="flex flex-col gap-2 border-t pt-4">
+              <h2 className="text-sm font-medium">{t("order.tracking")}</h2>
+              <ol>
+                {data.history.map((entry, i) => {
+                  const current = i === data.history.length - 1;
+                  return (
+                    <li
+                      key={`${entry.status}-${entry.changed_at}`}
+                      className="flex gap-3"
+                    >
+                      <div className="flex flex-col items-center">
+                        <span
+                          className={`mt-1 size-2.5 rounded-full ${current ? "bg-primary ring-4 ring-primary/20" : "bg-muted-foreground/40"}`}
+                        />
+                        {current ? null : (
+                          <span className="w-px flex-1 bg-border" />
+                        )}
+                      </div>
+                      <div className="pb-4 text-sm">
+                        <p
+                          className={
+                            current ? "font-medium" : "text-muted-foreground"
+                          }
+                        >
+                          {t(`order.status.${entry.status}`)}
+                        </p>
+                        <time
+                          dateTime={entry.changed_at}
+                          className="text-xs text-muted-foreground"
+                        >
+                          {formatDateTime(entry.changed_at, i18n.language)}
+                        </time>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <dt className="text-muted-foreground">
                 {t("checkout.fulfillment")}

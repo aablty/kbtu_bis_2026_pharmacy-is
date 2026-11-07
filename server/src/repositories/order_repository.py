@@ -24,6 +24,26 @@ class OrderRepository:
             OrderStatusHistory(order_id=order_id, status=status, changed_by=changed_by)
         )
 
+    async def get_history(self, order_id: int) -> list[OrderStatusHistory]:
+        result = await self._session.execute(
+            select(OrderStatusHistory)
+            .where(OrderStatusHistory.order_id == order_id)
+            .order_by(OrderStatusHistory.changed_at, OrderStatusHistory.history_id)
+        )
+        return list(result.scalars().all())
+
+    async def get_history_for_orders(
+        self, order_ids: list[int]
+    ) -> list[OrderStatusHistory]:
+        if not order_ids:
+            return []
+        result = await self._session.execute(
+            select(OrderStatusHistory)
+            .where(OrderStatusHistory.order_id.in_(order_ids))
+            .order_by(OrderStatusHistory.changed_at, OrderStatusHistory.history_id)
+        )
+        return list(result.scalars().all())
+
     async def get_by_id(self, order_id: int) -> Order | None:
         return await self._session.get(Order, order_id)
 

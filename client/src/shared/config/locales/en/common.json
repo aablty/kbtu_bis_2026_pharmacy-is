@@ -217,6 +217,11 @@
       "paid": "Paid",
       "failed": "Failed",
       "refunded": "Refunded"
-    }
+    },
+    "tracking": "Tracking"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet."
   }
 }

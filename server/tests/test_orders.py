@@ -674,3 +674,48 @@ async def test_two_concurrent_prescription_orders_get_independent_pickup_codes(
         headers=auth_headers(admin_token),
     )
     assert resp.status_code == 200
+
+
+async def test_order_history_and_status_notification_reach_the_customer(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    medicine_id = await _setup_medicine(client, auth_headers(admin_token))
+
+    resp = await client.post(
+        "/orders",
+        json=_order_payload(medicine_id),
+        headers=auth_headers(customer_token),
+    )
+    order_id = resp.json()["order_id"]
+
+    for status in ("ready", "completed"):
+        resp = await client.patch(
+            f"/orders/{order_id}/status",
+            json={"status": status},
+            headers=auth_headers(admin_token),
+        )
+        assert resp.status_code == 200, resp.text
+
+    resp = await client.get(f"/orders/{order_id}", headers=auth_headers(customer_token))
+    assert [h["status"] for h in resp.json()["history"]] == [
+        "pending",
+        "confirmed",
+        "ready",
+        "completed",
+    ]
+
+    resp = await client.get("/orders", headers=auth_headers(customer_token))
+    (listed,) = [o for o in resp.json() if o["order_id"] == order_id]
+    assert [h["status"] for h in listed["history"]] == [
+        "pending",
+        "confirmed",
+        "ready",
+        "completed",
+    ]
+
+    resp = await client.get("/notifications", headers=auth_headers(customer_token))
+    related = [n for n in resp.json() if n["related_id"] == order_id]
+    assert {n["type"] for n in related} == {"order_status"}
+    assert len(related) == 2
