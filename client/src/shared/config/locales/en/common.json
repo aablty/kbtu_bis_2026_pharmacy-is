@@ -159,7 +159,8 @@
     "price": "Price",
     "availability": "Availability",
     "prescription": "Prescription",
-    "noPrescription": "Not required"
+    "noPrescription": "Not required",
+    "zoom": "Click to enlarge"
   },
   "cart": {
     "title": "Cart",

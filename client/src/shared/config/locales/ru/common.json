@@ -159,7 +159,8 @@
     "price": "Цена",
     "availability": "Наличие",
     "prescription": "Рецепт",
-    "noPrescription": "Не требуется"
+    "noPrescription": "Не требуется",
+    "zoom": "Нажмите, чтобы увеличить"
   },
   "cart": {
     "title": "Корзина",
