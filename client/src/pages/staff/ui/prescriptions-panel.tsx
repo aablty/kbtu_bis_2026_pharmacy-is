@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckIcon, ExternalLinkIcon, XIcon } from "lucide-react";
+import { CheckIcon, ExternalLinkIcon, FileTextIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
+import { ListEmpty } from "@/shared/ui/list-empty";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
 import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
@@ -48,6 +49,7 @@ export function PrescriptionsPanel() {
   const [filter, setFilter] = useState<PrescriptionStatus | "all">("pending");
   const [rejecting, setRejecting] = useState<Prescription | null>(null);
   const [reason, setReason] = useState("");
+  const [search, setSearch] = useState("");
 
   const prescriptions = useQuery({
     queryKey: ["staff-prescriptions"],
@@ -64,8 +66,13 @@ export function PrescriptionsPanel() {
     },
   });
 
+  const rxQuery = search.trim();
   const shown = (prescriptions.data ?? []).filter(
-    (p) => filter === "all" || p.status === filter,
+    (p) =>
+      (filter === "all" || p.status === filter) &&
+      (!rxQuery ||
+        String(p.prescription_id).includes(rxQuery) ||
+        String(p.customer_id).includes(rxQuery)),
   );
 
   function confirmReject() {
@@ -127,7 +134,15 @@ export function PrescriptionsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("list.searchPrescriptions")}
+          aria-label={t("list.searchPrescriptions")}
+          className="sm:w-64"
+        />
         <NativeSelect
           aria-label={t("staff.prescriptions.filter")}
           value={filter}
@@ -159,6 +174,28 @@ export function PrescriptionsPanel() {
 
       {prescriptions.isPending ? (
         <SkeletonList rows={4} label={t("catalog.loading")} />
+      ) : null}
+      {prescriptions.data && prescriptions.data.length === 0 ? (
+        <ListEmpty
+          icon={FileTextIcon}
+          title={t("list.prescriptions.title")}
+          description={t("list.prescriptions.hint")}
+        />
+      ) : null}
+      {prescriptions.data &&
+      prescriptions.data.length > 0 &&
+      shown.length === 0 ? (
+        <ListEmpty icon={FileTextIcon} title={t("list.noMatch")}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearch("");
+              setFilter("all");
+            }}
+          >
+            {t("list.reset")}
+          </Button>
+        </ListEmpty>
       ) : null}
       <div className="hidden md:block">
         <Table>

@@ -15,32 +15,34 @@ export function StaffPage() {
         {t("auth.staff.title")}
       </h1>
       <Tabs defaultValue="orders">
-        <TabsList>
-          <TabsTrigger
-            value="orders"
-            aria-label={t("staff.tabs.orders")}
-            title={t("staff.tabs.orders")}
-          >
-            <PackageIcon />
-            {t("staff.tabs.orders")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="prescriptions"
-            aria-label={t("staff.tabs.prescriptions")}
-            title={t("staff.tabs.prescriptions")}
-          >
-            <FileTextIcon />
-            {t("staff.tabs.prescriptions")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="pos"
-            aria-label={t("staff.tabs.pos")}
-            title={t("staff.tabs.pos")}
-          >
-            <CreditCardIcon />
-            {t("staff.tabs.pos")}
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:overflow-visible md:px-0 md:pb-0">
+          <TabsList>
+            <TabsTrigger
+              value="orders"
+              aria-label={t("staff.tabs.orders")}
+              title={t("staff.tabs.orders")}
+            >
+              <PackageIcon />
+              {t("staff.tabs.orders")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="prescriptions"
+              aria-label={t("staff.tabs.prescriptions")}
+              title={t("staff.tabs.prescriptions")}
+            >
+              <FileTextIcon />
+              {t("staff.tabs.prescriptions")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="pos"
+              aria-label={t("staff.tabs.pos")}
+              title={t("staff.tabs.pos")}
+            >
+              <CreditCardIcon />
+              {t("staff.tabs.pos")}
+            </TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="orders" className="mt-4">
           <OrdersPanel />
         </TabsContent>

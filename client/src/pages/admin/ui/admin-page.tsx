@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
   FolderTreeIcon,
   PillIcon,
+  SearchIcon,
   TruckIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -38,41 +39,47 @@ export function AdminPage() {
         {t("auth.admin.title")}
       </h1>
       <Tabs defaultValue="analytics">
-        <TabsList>
-          <TabsTrigger
-            value="analytics"
-            aria-label={t("admin.entities.analytics")}
-            title={t("admin.entities.analytics")}
-          >
-            <BarChart3Icon />
-            {t("admin.entities.analytics")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="medicines"
-            aria-label={t("admin.entities.medicines")}
-            title={t("admin.entities.medicines")}
-          >
-            <PillIcon />
-            {t("admin.entities.medicines")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="categories"
-            aria-label={t("admin.entities.categories")}
-            title={t("admin.entities.categories")}
-          >
-            <FolderTreeIcon />
-            {t("admin.entities.categories")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="suppliers"
-            aria-label={t("admin.entities.suppliers")}
-            title={t("admin.entities.suppliers")}
-          >
-            <TruckIcon />
-            {t("admin.entities.suppliers")}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="analytics" className="mt-4">
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:overflow-visible md:px-0 md:pb-0">
+          <TabsList className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-9">
+            <TabsTrigger
+              className="flex-none"
+              value="analytics"
+              aria-label={t("admin.entities.analytics")}
+              title={t("admin.entities.analytics")}
+            >
+              <BarChart3Icon />
+              {t("admin.entities.analytics")}
+            </TabsTrigger>
+            <TabsTrigger
+              className="flex-none"
+              value="medicines"
+              aria-label={t("admin.entities.medicines")}
+              title={t("admin.entities.medicines")}
+            >
+              <PillIcon />
+              {t("admin.entities.medicines")}
+            </TabsTrigger>
+            <TabsTrigger
+              className="flex-none"
+              value="categories"
+              aria-label={t("admin.entities.categories")}
+              title={t("admin.entities.categories")}
+            >
+              <FolderTreeIcon />
+              {t("admin.entities.categories")}
+            </TabsTrigger>
+            <TabsTrigger
+              className="flex-none"
+              value="suppliers"
+              aria-label={t("admin.entities.suppliers")}
+              title={t("admin.entities.suppliers")}
+            >
+              <TruckIcon />
+              {t("admin.entities.suppliers")}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="analytics" className="mt-4 min-w-0">
           <AnalyticsPanel />
         </TabsContent>
         <TabsContent value="medicines" className="mt-4">
@@ -321,7 +328,7 @@ function MedicinesTab() {
             setPage(0);
             setQuery(search.trim());
           }}
-          className="flex gap-2"
+          className="flex w-full gap-2 sm:w-auto"
         >
           <Input
             type="search"
@@ -329,7 +336,7 @@ function MedicinesTab() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("catalog.search")}
             aria-label={t("catalog.search")}
-            className="w-64"
+            className="w-full sm:w-64"
           />
           <Button
             type="submit"
@@ -337,7 +344,7 @@ function MedicinesTab() {
             size="icon"
             aria-label={t("catalog.searchSubmit")}
           >
-            <ChevronRightIcon />
+            <SearchIcon />
           </Button>
         </form>
       }

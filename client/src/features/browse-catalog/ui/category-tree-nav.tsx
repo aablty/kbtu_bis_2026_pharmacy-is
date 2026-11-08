@@ -13,10 +13,13 @@ export function CategoryTreeNav({
   nodes,
   selectedId,
   hrefFor,
+  onNavigate,
 }: {
   nodes: CategoryNode[];
   selectedId: number | null;
   hrefFor: (categoryId: number) => string;
+  /** Called after a link is followed (the mobile sheet closes on it). */
+  onNavigate?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(
@@ -47,7 +50,7 @@ export function CategoryTreeNav({
                     onClick={() => toggle(node.category_id)}
                     aria-expanded={open}
                     aria-label={`${t(open ? "catalog.collapse" : "catalog.expand")}: ${label}`}
-                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-md md:size-7 text-muted-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                   >
                     <ChevronRightIcon
                       className={cn(
@@ -57,13 +60,14 @@ export function CategoryTreeNav({
                     />
                   </button>
                 ) : (
-                  <span className="size-7 shrink-0" />
+                  <span className="size-11 shrink-0 md:size-7" />
                 )}
                 <Link
                   to={hrefFor(node.category_id)}
+                  onClick={onNavigate}
                   aria-current={selected ? "page" : undefined}
                   className={cn(
-                    "min-w-0 flex-1 rounded-md px-2 py-1 text-sm hover:bg-accent",
+                    "flex min-w-0 flex-1 items-center rounded-md px-2 py-2.5 text-sm hover:bg-accent md:py-1",
                     selected
                       ? "bg-accent font-semibold text-primary"
                       : "text-muted-foreground",

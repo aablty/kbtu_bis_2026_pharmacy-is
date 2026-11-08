@@ -11,6 +11,7 @@ export const catalogEndpoints = {
     in_stock?: boolean;
     min_price?: number;
     max_price?: number;
+    sort?: "name" | "price_asc" | "price_desc";
     cursor?: string;
     limit: number;
     offset: number;

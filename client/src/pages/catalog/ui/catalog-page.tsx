@@ -5,7 +5,6 @@ import {
   ChevronDownIcon,
   FileTextIcon,
   SearchIcon,
-  XIcon,
 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,9 +21,10 @@ import { type Category, catalogEndpoints } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -35,6 +35,7 @@ import { Toggle } from "@/shared/ui/toggle";
 import { AppShell } from "@/widgets/layout";
 
 const PAGE_SIZE = 12;
+const SORTS = ["name", "price_asc", "price_desc"] as const;
 
 // Pressed filters are tinted, not just outlined, so the active state reads at a glance.
 const FILTER_TOGGLE =
@@ -57,6 +58,7 @@ export function CatalogPage() {
   const otcOnly = params.get("otc") === "1";
   const minPrice = numberParam(params.get("min"));
   const maxPrice = numberParam(params.get("max"));
+  const sort = SORTS.find((x) => x === params.get("sort")) ?? "name";
   // Category is navigation, not a filter: clearing filters keeps it.
   const hasFilters =
     Boolean(q) ||
@@ -65,6 +67,11 @@ export function CatalogPage() {
     minPrice !== undefined ||
     maxPrice !== undefined;
 
+  const activeFilters =
+    Number(inStock) +
+    Number(otcOnly) +
+    Number(minPrice !== undefined || maxPrice !== undefined);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [priceDraft, setPriceDraft] = useState({
     min: params.get("min") ?? "",
     max: params.get("max") ?? "",
@@ -105,7 +112,17 @@ export function CatalogPage() {
   const medicines = useQuery({
     queryKey: [
       "medicines",
-      { q, categoryId, page, cursor, inStock, otcOnly, minPrice, maxPrice },
+      {
+        q,
+        categoryId,
+        page,
+        cursor,
+        inStock,
+        otcOnly,
+        minPrice,
+        maxPrice,
+        sort,
+      },
     ],
     queryFn: () =>
       catalogEndpoints.medicines({
@@ -115,6 +132,7 @@ export function CatalogPage() {
         requires_prescription: otcOnly ? false : undefined,
         min_price: minPrice,
         max_price: maxPrice,
+        sort,
         limit: PAGE_SIZE,
         // A cursor (set by the "next" step) seeks past the last row; page
         // numbers jump with offset. Both rely on the same name+id ordering.
@@ -152,6 +170,7 @@ export function CatalogPage() {
     navigate(hrefFor({ q: q || null }));
   }
 
+  const priceActive = minPrice !== undefined || maxPrice !== undefined;
   const selectedCategory = categories.data?.find(
     (c) => c.category_id === categoryId,
   );
@@ -180,11 +199,11 @@ export function CatalogPage() {
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">
-          <Sheet>
+          <Sheet open={categoriesOpen} onOpenChange={setCategoriesOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-between lg:hidden"
+                className="h-11 w-full justify-between lg:hidden"
               >
                 <span className="truncate">{selectedCategoryLabel}</span>
                 <ChevronDownIcon />
@@ -198,15 +217,12 @@ export function CatalogPage() {
                 <SheetTitle>{t("catalog.categories")}</SheetTitle>
               </SheetHeader>
               <div className="px-4 pb-6">
-                <SheetClose asChild>
-                  <div>
-                    <CategoryNav
-                      categories={categories.data}
-                      categoryId={categoryId}
-                      hrefFor={hrefFor}
-                    />
-                  </div>
-                </SheetClose>
+                <CategoryNav
+                  categories={categories.data}
+                  categoryId={categoryId}
+                  hrefFor={hrefFor}
+                  onNavigate={() => setCategoriesOpen(false)}
+                />
               </div>
             </SheetContent>
           </Sheet>
@@ -235,7 +251,7 @@ export function CatalogPage() {
             </form>
           </search>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0 [&>*]:shrink-0">
             <Toggle
               variant="outline"
               pressed={inStock}
@@ -264,52 +280,61 @@ export function CatalogPage() {
               </span>
               {t("catalog.otcOnly")}
             </Toggle>
-            <div className="flex items-center gap-2 text-sm">
-              <label
-                htmlFor="catalog-price-min"
-                className="text-muted-foreground"
-              >
-                {t("catalog.priceFrom")}
-              </label>
-              <Input
-                name="min"
-                id="catalog-price-min"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={priceDraft.min}
-                onChange={(e) =>
-                  setPriceDraft({ ...priceDraft, min: e.target.value })
-                }
-                className="w-24"
-              />
-              <label
-                htmlFor="catalog-price-max"
-                className="text-muted-foreground"
-              >
-                {t("catalog.priceTo")}
-              </label>
-              <Input
-                name="max"
-                id="catalog-price-max"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={priceDraft.max}
-                onChange={(e) =>
-                  setPriceDraft({ ...priceDraft, max: e.target.value })
-                }
-                className="w-24"
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-11 gap-1.5 rounded-3xl px-3 md:h-9",
+                    priceActive &&
+                      "border-primary/40 bg-primary/15 text-primary",
+                  )}
+                >
+                  {priceActive
+                    ? `${minPrice ?? 0} – ${maxPrice ?? "…"}`
+                    : t("catalog.price")}
+                  <ChevronDownIcon />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="catalog-price-min">
+                      {t("catalog.priceFrom")}
+                    </Label>
+                    <Input
+                      name="min"
+                      id="catalog-price-min"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={priceDraft.min}
+                      onChange={(e) =>
+                        setPriceDraft({ ...priceDraft, min: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="catalog-price-max">
+                      {t("catalog.priceTo")}
+                    </Label>
+                    <Input
+                      name="max"
+                      id="catalog-price-max"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={priceDraft.max}
+                      onChange={(e) =>
+                        setPriceDraft({ ...priceDraft, max: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             {hasFilters ? (
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                aria-label={t("catalog.clearFilters")}
-                title={t("catalog.clearFilters")}
-              >
+              <Button asChild variant="ghost" className="h-11 px-3 md:h-9">
                 <Link
                   to={hrefFor({
                     q: null,
@@ -319,10 +344,45 @@ export function CatalogPage() {
                     max: null,
                   })}
                 >
-                  <XIcon />
+                  {t("catalog.clearFilters")}
+                  {activeFilters > 0 ? (
+                    <span className="ml-1.5 flex min-w-5 justify-center rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground tabular-nums">
+                      {activeFilters}
+                    </span>
+                  ) : null}
                 </Link>
               </Button>
             ) : null}
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p aria-live="polite" className="text-sm text-muted-foreground">
+              {medicines.data
+                ? t("catalog.found", { count: medicines.data.total })
+                : ""}
+            </p>
+            <NativeSelect
+              aria-label={t("catalog.sortLabel")}
+              value={sort}
+              onChange={(e) =>
+                navigate(
+                  hrefFor({
+                    sort: e.target.value === "name" ? null : e.target.value,
+                  }),
+                )
+              }
+              className="w-auto"
+            >
+              <NativeSelectOption value="name">
+                {t("catalog.sort.name")}
+              </NativeSelectOption>
+              <NativeSelectOption value="price_asc">
+                {t("catalog.sort.priceAsc")}
+              </NativeSelectOption>
+              <NativeSelectOption value="price_desc">
+                {t("catalog.sort.priceDesc")}
+              </NativeSelectOption>
+            </NativeSelect>
           </div>
 
           {medicines.isError ? (
@@ -378,19 +438,22 @@ function CategoryNav({
   categories,
   categoryId,
   hrefFor,
+  onNavigate,
 }: {
   categories: Category[] | undefined;
   categoryId: number | null;
   hrefFor: (change: Record<string, string | null>) => string;
+  onNavigate?: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <nav aria-label={t("catalog.categories")} className="flex flex-col gap-0.5">
       <Link
         to={hrefFor({ category: null })}
+        onClick={onNavigate}
         aria-current={categoryId === null ? "page" : undefined}
         className={cn(
-          "block rounded-md py-2 pr-2 pl-9 text-sm hover:bg-accent",
+          "flex min-h-11 items-center rounded-md pr-2 pl-9 text-sm hover:bg-accent md:min-h-0 md:py-1",
           categoryId === null
             ? "bg-accent font-semibold text-primary"
             : "text-muted-foreground",
@@ -403,6 +466,7 @@ function CategoryNav({
           nodes={buildCategoryTree(categories)}
           selectedId={categoryId}
           hrefFor={(id) => hrefFor({ category: String(id) })}
+          onNavigate={onNavigate}
         />
       ) : null}
     </nav>

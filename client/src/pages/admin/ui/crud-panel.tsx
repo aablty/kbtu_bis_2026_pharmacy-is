@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { InboxIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/shared/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { ListEmpty } from "@/shared/ui/list-empty";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
 import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
@@ -149,9 +150,9 @@ export function CrudPanel<T>({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {toolbar}
-        <Button onClick={() => open(null)}>
+        <Button onClick={() => open(null)} className="w-full sm:w-auto">
           <PlusIcon />
           {t("admin.add")}
         </Button>
@@ -160,7 +161,19 @@ export function CrudPanel<T>({
       {items === undefined ? (
         <SkeletonList rows={4} label={t("catalog.loading")} />
       ) : null}
-      <div className="hidden md:block">
+      {items && items.length === 0 ? (
+        <ListEmpty
+          icon={InboxIcon}
+          title={t("list.admin.title")}
+          description={t("list.admin.hint")}
+        >
+          <Button onClick={() => open(null)}>
+            <PlusIcon />
+            {t("admin.add")}
+          </Button>
+        </ListEmpty>
+      ) : null}
+      <div className={items?.length === 0 ? "hidden" : "hidden md:block"}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -193,11 +206,14 @@ export function CrudPanel<T>({
             key={idOf(item)}
             className="flex flex-col gap-3 rounded-2xl border p-4"
           >
+            <p className="text-sm font-medium break-words">
+              {columns[0]?.cell(item)}
+            </p>
             <dl className="flex flex-col gap-1.5 text-sm">
-              {columns.map((c) => (
+              {columns.slice(1).map((c) => (
                 <div key={c.header} className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{c.header}</dt>
-                  <dd className="min-w-0 truncate text-right">
+                  <dd className="min-w-0 text-right break-words">
                     {c.cell(item)}
                   </dd>
                 </div>

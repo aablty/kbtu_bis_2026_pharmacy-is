@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, ReceiptIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/features/browse-catalog";
@@ -12,6 +12,14 @@ import {
 import { formatDateTime } from "@/shared/lib/format-date";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { ListEmpty } from "@/shared/ui/list-empty";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/shared/ui/sheet";
 
 interface Line {
   medicine: Medicine;
@@ -26,6 +34,7 @@ export function PosPanel() {
   const [lines, setLines] = useState<Line[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [receipt, setReceipt] = useState<Sale | null>(null);
+  const [saleOpen, setSaleOpen] = useState(false);
 
   const recent = useQuery({
     queryKey: ["staff-sales"],
@@ -86,6 +95,94 @@ export function PosPanel() {
   );
   const valid = lines.length > 0 && lines.every((l) => l.quantity > 0);
 
+  // The sale form is the same on phones (bottom sheet) and desktop (side column).
+  const saleForm = (
+    <>
+      {lines.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("staff.pos.empty")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {lines.map((l) => (
+            <li
+              key={l.medicine.medicine_id}
+              className="flex items-center gap-2 text-sm"
+            >
+              <span className="min-w-0 flex-1 truncate">{l.medicine.name}</span>
+              <Input
+                type="number"
+                min={1}
+                max={l.medicine.stock_quantity}
+                aria-label={t("staff.pos.quantity")}
+                value={l.quantity}
+                onChange={(e) =>
+                  setQuantity(l.medicine.medicine_id, Number(e.target.value))
+                }
+                className="w-20"
+              />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("cart.remove")}
+                onClick={() => setQuantity(l.medicine.medicine_id, 0)}
+              >
+                <Trash2Icon />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="pos-customer" className="text-sm text-muted-foreground">
+          {t("staff.pos.customer")}
+        </label>
+        <Input
+          id="pos-customer"
+          type="number"
+          min={1}
+          inputMode="numeric"
+          value={customerId}
+          onChange={(e) => setCustomerId(e.target.value)}
+        />
+      </div>
+      <div className="flex items-baseline justify-between border-t pt-3">
+        <span className="text-sm text-muted-foreground">
+          {t("cart.subtotal")}
+        </span>
+        <span className="text-lg font-semibold tabular-nums">
+          {formatPrice(String(total), i18n.language)}
+        </span>
+      </div>
+      <Button
+        className="w-full"
+        disabled={!valid || sell.isPending}
+        onClick={() =>
+          sell.mutate({
+            items: lines.map((l) => ({
+              medicine_id: l.medicine.medicine_id,
+              quantity: l.quantity,
+            })),
+            customer_id: customerId ? Number(customerId) : null,
+          })
+        }
+      >
+        {sell.isPending ? t("staff.pos.selling") : t("staff.pos.submit")}
+      </Button>
+      {sell.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {t("staff.errors.generic")}
+        </p>
+      ) : null}
+      {receipt ? (
+        <p role="status" className="text-sm text-primary">
+          {t("staff.pos.receipt", {
+            id: receipt.sale_id,
+            total: formatPrice(receipt.total_amount, i18n.language),
+          })}
+        </p>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_20rem]">
       <section className="flex flex-col gap-3">
@@ -107,6 +204,33 @@ export function PosPanel() {
             {t("catalog.searchSubmit")}
           </Button>
         </form>
+
+        {/* Phones: the sale opens in a sheet, so the search results stay on screen. */}
+        <div className="sticky bottom-4 z-10 md:hidden">
+          <Sheet open={saleOpen} onOpenChange={setSaleOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="default"
+                className="h-12 w-full justify-between shadow-lg"
+              >
+                <span>{t("staff.pos.sale")}</span>
+                <span className="tabular-nums">
+                  {lines.length} · {formatPrice(String(total), i18n.language)}
+                </span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="bottom"
+              className="max-h-[85svh] gap-4 overflow-y-auto rounded-t-2xl p-4"
+            >
+              <SheetHeader>
+                <SheetTitle>{t("staff.pos.sale")}</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4">{saleForm}</div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
         <ul className="flex flex-col divide-y rounded-xl border">
           {results.data?.items.map((m) => (
             <li
@@ -133,8 +257,16 @@ export function PosPanel() {
             </li>
           ))}
         </ul>
+
         <h2 className="mt-2 text-sm font-medium">{t("staff.pos.recent")}</h2>
-        <ul className="flex flex-col divide-y rounded-xl border">
+        {recent.data && recent.data.length === 0 ? (
+          <ListEmpty
+            icon={ReceiptIcon}
+            title={t("list.sales.title")}
+            description={t("list.sales.hint")}
+          />
+        ) : null}
+        <ul className="flex flex-col divide-y rounded-xl border empty:hidden">
           {recent.data?.slice(0, 10).map((sale) => (
             <li
               key={sale.sale_id}
@@ -154,89 +286,9 @@ export function PosPanel() {
         </ul>
       </section>
 
-      <aside className="flex flex-col gap-3 rounded-2xl border p-4">
+      <aside className="hidden flex-col gap-3 rounded-2xl border p-4 md:flex">
         <h2 className="text-sm font-medium">{t("staff.pos.sale")}</h2>
-        {lines.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t("staff.pos.empty")}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {lines.map((l) => (
-              <li
-                key={l.medicine.medicine_id}
-                className="flex items-center gap-2 text-sm"
-              >
-                <span className="min-w-0 flex-1 truncate">
-                  {l.medicine.name}
-                </span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={l.medicine.stock_quantity}
-                  aria-label={t("staff.pos.quantity")}
-                  value={l.quantity}
-                  onChange={(e) =>
-                    setQuantity(l.medicine.medicine_id, Number(e.target.value))
-                  }
-                  className="w-16"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={t("cart.remove")}
-                  onClick={() => setQuantity(l.medicine.medicine_id, 0)}
-                >
-                  <Trash2Icon />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <Input
-          type="number"
-          min={1}
-          inputMode="numeric"
-          placeholder={t("staff.pos.customer")}
-          aria-label={t("staff.pos.customer")}
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-        />
-        <div className="flex items-baseline justify-between border-t pt-3">
-          <span className="text-sm text-muted-foreground">
-            {t("cart.subtotal")}
-          </span>
-          <span className="font-semibold tabular-nums">
-            {formatPrice(String(total), i18n.language)}
-          </span>
-        </div>
-        <Button
-          disabled={!valid || sell.isPending}
-          onClick={() =>
-            sell.mutate({
-              items: lines.map((l) => ({
-                medicine_id: l.medicine.medicine_id,
-                quantity: l.quantity,
-              })),
-              customer_id: customerId ? Number(customerId) : null,
-            })
-          }
-        >
-          {sell.isPending ? t("staff.pos.selling") : t("staff.pos.submit")}
-        </Button>
-        {sell.isError ? (
-          <p role="alert" className="text-sm text-destructive">
-            {t("staff.errors.generic")}
-          </p>
-        ) : null}
-        {receipt ? (
-          <p role="status" className="text-sm text-primary">
-            {t("staff.pos.receipt", {
-              id: receipt.sale_id,
-              total: formatPrice(receipt.total_amount, i18n.language),
-            })}
-          </p>
-        ) : null}
+        {saleForm}
       </aside>
     </div>
   );

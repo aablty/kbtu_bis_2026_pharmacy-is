@@ -37,7 +37,7 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
       <div className="mx-auto flex h-16 max-w-5xl items-center gap-4 px-4">
-        <Link to="/" className="shrink-0">
+        <Link to="/" className="shrink-0 flex items-center">
           <AppLogo />
         </Link>
 

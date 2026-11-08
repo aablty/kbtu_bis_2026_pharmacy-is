@@ -153,7 +153,15 @@
     "noImage": "No photo",
     "goToPage": "Page {{page}}",
     "priceFrom": "from",
-    "priceTo": "to"
+    "priceTo": "to",
+    "price": "Price",
+    "found": "Found: {{count}}",
+    "sortLabel": "Sort",
+    "sort": {
+      "name": "By name",
+      "priceAsc": "Price: low to high",
+      "priceDesc": "Price: high to low"
+    }
   },
   "medicine": {
     "back": "Back to catalog",
@@ -359,7 +367,8 @@
       "very-low": "Very low",
       "low": "Running low"
     },
-    "revenueCaption": "Last {{days}} days; days without sales show zero"
+    "revenueCaption": "Last {{days}} days; days without sales show zero",
+    "overview": "Overview"
   },
   "orders": {
     "title": "Orders",
@@ -405,5 +414,28 @@
     },
     "emailHint": "Your sign-in email. Contact support to change it.",
     "passwordHint": "At least 8 characters."
+  },
+  "list": {
+    "searchOrders": "Order or customer ID",
+    "searchPrescriptions": "Prescription or customer ID",
+    "rxOnly": "Prescription only",
+    "noMatch": "Nothing matches these filters.",
+    "reset": "Reset filters",
+    "orders": {
+      "title": "No orders yet",
+      "hint": "New orders will appear here."
+    },
+    "prescriptions": {
+      "title": "No prescriptions",
+      "hint": "Uploaded prescriptions will appear here."
+    },
+    "sales": {
+      "title": "No sales yet",
+      "hint": "Sales recorded at the till show up here."
+    },
+    "admin": {
+      "title": "Nothing here yet",
+      "hint": "Add the first record to get started."
+    }
   }
 }
