@@ -19,7 +19,7 @@ export interface CategoryInput {
 export interface MedicineInput {
   name: string;
   manufacturer: string | null;
-  dosage_form: string | null;
+  dosage_form: import("./catalog-types").DosageForm | null;
   price: string;
   requires_prescription: boolean;
   stock_quantity: number;

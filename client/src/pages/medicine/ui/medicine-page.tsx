@@ -4,7 +4,11 @@ import { ChevronLeftIcon, ChevronRightIcon, PackageIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
-import { categoryLabel, formatPrice } from "@/features/browse-catalog";
+import {
+  categoryLabel,
+  dosageFormLabel,
+  formatPrice,
+} from "@/features/browse-catalog";
 import { CartControl } from "@/features/cart";
 import { catalogEndpoints } from "@/shared/api";
 import { Badge } from "@/shared/ui/badge";
@@ -197,7 +201,7 @@ export function MedicinePage() {
               <dt className="text-muted-foreground">
                 {t("medicine.dosageForm")}
               </dt>
-              <dd>{data.dosage_form ?? "—"}</dd>
+              <dd>{dosageFormLabel(data.dosage_form, t)}</dd>
               <dt className="text-muted-foreground">
                 {t("medicine.prescription")}
               </dt>

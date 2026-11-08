@@ -21,6 +21,7 @@ import {
   type Supplier,
   type SupplierInput,
 } from "@/shared/api";
+import type { DosageForm } from "@/shared/api/catalog-types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -30,6 +31,47 @@ import { AnalyticsPanel } from "./analytics-panel";
 import { CrudPanel, type FieldDef, type Values } from "./crud-panel";
 
 const PAGE_SIZE = 50;
+const DOSAGE_FORMS: DosageForm[] = [
+  "ampoules",
+  "aerosol",
+  "balm",
+  "gel",
+  "granules",
+  "dragee",
+  "chewing_gum",
+  "drops",
+  "capsules",
+  "vaginal_capsules",
+  "pencil",
+  "concentrate",
+  "cream",
+  "lacquer",
+  "lozenges",
+  "lotion",
+  "ointment",
+  "oil",
+  "tincture",
+  "paste",
+  "pastilles",
+  "strip",
+  "patch",
+  "dispersible_film",
+  "powder",
+  "solution",
+  "sachet",
+  "syrup",
+  "spiral",
+  "spray",
+  "suppositories",
+  "suspension",
+  "tablets",
+  "vaginal_tablets",
+  "vial",
+  "shampoo",
+  "effervescent_tablets",
+  "syringe",
+  "emulsion",
+];
 
 export function AdminPage() {
   const { t } = useTranslation();
@@ -235,7 +277,14 @@ function MedicinesTab() {
   const fields: FieldDef[] = [
     { name: "name", type: "text", required: true },
     { name: "manufacturer", type: "text" },
-    { name: "dosage_form", type: "text" },
+    {
+      name: "dosage_form",
+      type: "select",
+      options: DOSAGE_FORMS.map((form) => ({
+        value: form,
+        label: t(`dosageForms.${form}`),
+      })),
+    },
     { name: "price", type: "decimal", required: true },
     { name: "requires_prescription", type: "bool" },
     { name: "stock_quantity", type: "number", required: true },
@@ -307,7 +356,9 @@ function MedicinesTab() {
         const body: MedicineInput = {
           name: v.name.trim(),
           manufacturer: orNull(v.manufacturer),
-          dosage_form: orNull(v.dosage_form),
+          dosage_form: DOSAGE_FORMS.includes(v.dosage_form as DosageForm)
+            ? (v.dosage_form as DosageForm)
+            : null,
           price: v.price,
           requires_prescription: v.requires_prescription === "true",
           stock_quantity: Number(v.stock_quantity),

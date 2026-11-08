@@ -9,7 +9,7 @@ export interface Medicine {
   medicine_id: number;
   name: string;
   manufacturer: string | null;
-  dosage_form: string | null;
+  dosage_form: DosageForm | null;
   price: string;
   requires_prescription: boolean;
   stock_quantity: number;
@@ -26,3 +26,44 @@ export interface MedicineList {
   offset: number;
   next_cursor: string | null;
 }
+
+export type DosageForm =
+  | "ampoules"
+  | "aerosol"
+  | "balm"
+  | "gel"
+  | "granules"
+  | "dragee"
+  | "chewing_gum"
+  | "drops"
+  | "capsules"
+  | "vaginal_capsules"
+  | "pencil"
+  | "concentrate"
+  | "cream"
+  | "lacquer"
+  | "lozenges"
+  | "lotion"
+  | "ointment"
+  | "oil"
+  | "tincture"
+  | "paste"
+  | "pastilles"
+  | "strip"
+  | "patch"
+  | "dispersible_film"
+  | "powder"
+  | "solution"
+  | "sachet"
+  | "syrup"
+  | "spiral"
+  | "spray"
+  | "suppositories"
+  | "suspension"
+  | "tablets"
+  | "vaginal_tablets"
+  | "vial"
+  | "shampoo"
+  | "effervescent_tablets"
+  | "syringe"
+  | "emulsion";
