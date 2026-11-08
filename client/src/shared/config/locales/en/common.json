@@ -141,6 +141,7 @@
     "prev": "Previous",
     "next": "Next",
     "requiresPrescription": "Prescription required",
+    "prescriptionBadge": "Prescription",
     "inStock": "In stock",
     "outOfStock": "Out of stock",
     "inStockOnly": "In stock only",

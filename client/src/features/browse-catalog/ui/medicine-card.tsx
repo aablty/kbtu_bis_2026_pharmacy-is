@@ -1,4 +1,4 @@
-import { CheckCircle2Icon, FileTextIcon, XCircleIcon } from "lucide-react";
+import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
@@ -32,14 +32,12 @@ export function MedicineCard({
           {inStock ? t("catalog.inStock") : t("catalog.outOfStock")}
         </Badge>
         {medicine.requires_prescription ? (
-          <span
+          <Badge
             title={t("catalog.requiresPrescription")}
-            role="img"
-            aria-label={t("catalog.requiresPrescription")}
-            className="pointer-events-none absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-background/90 text-amber-600 shadow-sm"
+            className="pointer-events-none absolute right-0 bottom-0 z-10 rounded-none rounded-tl-md bg-sky-500 text-white shadow-sm hover:bg-sky-500"
           >
-            <FileTextIcon className="size-4" />
-          </span>
+            {t("catalog.prescriptionBadge")}
+          </Badge>
         ) : null}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">

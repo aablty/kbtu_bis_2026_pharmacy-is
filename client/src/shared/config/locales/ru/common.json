@@ -141,6 +141,7 @@
     "prev": "Назад",
     "next": "Вперёд",
     "requiresPrescription": "Нужен рецепт",
+    "prescriptionBadge": "Рецепт",
     "inStock": "В наличии",
     "outOfStock": "Нет в наличии",
     "inStockOnly": "Только в наличии",
