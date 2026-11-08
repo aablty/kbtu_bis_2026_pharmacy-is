@@ -197,7 +197,7 @@ export function PrescriptionsPanel() {
           </Button>
         </ListEmpty>
       ) : null}
-      <div className="hidden md:block">
+      <div className={shown.length === 0 ? "hidden" : "hidden md:block"}>
         <Table>
           <TableHeader>
             <TableRow>

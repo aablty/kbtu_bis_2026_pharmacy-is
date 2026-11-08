@@ -57,6 +57,7 @@ class MedicineRepository:
         limit: int = 20,
         offset: int = 0,
         after: tuple[str, int] | None = None,
+        sort: str = "name",
     ) -> list[Medicine]:
         stmt = self._filtered(
             select(Medicine),
@@ -67,13 +68,19 @@ class MedicineRepository:
             min_price=min_price,
             max_price=max_price,
         )
-        # medicine_id breaks name ties: without it, equal names have no stable
-        # order and rows can repeat or vanish across pages.
-        stmt = stmt.order_by(Medicine.name, Medicine.medicine_id)
+        key = Medicine.price if sort.startswith("price") else Medicine.name
+        desc = sort == "price_desc"
+        # medicine_id breaks ties: without it, equal keys have no stable order
+        # and rows can repeat or vanish across pages.
+        if desc:
+            stmt = stmt.order_by(key.desc(), Medicine.medicine_id.desc())
+        else:
+            stmt = stmt.order_by(key, Medicine.medicine_id)
         if after is not None:  # keyset seek: replaces OFFSET
-            stmt = stmt.where(
-                tuple_(Medicine.name, Medicine.medicine_id) > tuple_(*after)
-            )
+            value = Decimal(after[0]) if sort.startswith("price") else after[0]
+            row = tuple_(key, Medicine.medicine_id)
+            bound = tuple_(value, after[1])
+            stmt = stmt.where(row < bound if desc else row > bound)
         else:
             stmt = stmt.offset(offset)
         stmt = stmt.limit(limit)

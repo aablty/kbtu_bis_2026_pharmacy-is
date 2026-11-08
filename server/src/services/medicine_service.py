@@ -61,6 +61,7 @@ class MedicineService:
         limit: int,
         offset: int,
         after: tuple[str, int] | None = None,
+        sort: str = "name",
     ) -> tuple[list[Medicine], int, bool]:
         """-> (items, total, has_more)."""
         category_ids = None
@@ -78,7 +79,7 @@ class MedicineService:
             "max_price": max_price,
         }
         rows = await self._repo.search(
-            **filters, limit=limit + 1, offset=offset, after=after
+            **filters, limit=limit + 1, offset=offset, after=after, sort=sort
         )  # one extra row tells us whether a next page exists
         total = await self._repo.count(**filters)
         return rows[:limit], total, len(rows) > limit

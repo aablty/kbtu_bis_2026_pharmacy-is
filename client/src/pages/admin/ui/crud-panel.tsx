@@ -173,7 +173,7 @@ export function CrudPanel<T>({
           </Button>
         </ListEmpty>
       ) : null}
-      <div className={items?.length === 0 ? "hidden" : "hidden md:block"}>
+      <div className={items?.length ? "hidden md:block" : "hidden"}>
         <Table>
           <TableHeader>
             <TableRow>

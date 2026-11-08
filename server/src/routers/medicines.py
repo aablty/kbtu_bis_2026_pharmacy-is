@@ -1,5 +1,5 @@
-from decimal import Decimal
-from typing import Annotated
+from decimal import Decimal, InvalidOperation
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -38,6 +38,7 @@ async def search_medicines(
     in_stock: bool = False,
     min_price: Annotated[Decimal | None, Query(ge=0)] = None,
     max_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    sort: Literal["name", "price_asc", "price_desc"] = "name",
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
     cursor: Annotated[
@@ -47,7 +48,9 @@ async def search_medicines(
 ) -> MedicineListResponse:
     try:
         after = decode_cursor(cursor) if cursor else None
-    except ValueError:
+        if after and sort.startswith("price"):
+            Decimal(after[0])
+    except ValueError, InvalidOperation:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid cursor"
         ) from None
@@ -62,6 +65,7 @@ async def search_medicines(
             limit=limit,
             offset=offset,
             after=after,
+            sort=sort,
         )
     except CategoryNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found") from None
@@ -71,7 +75,12 @@ async def search_medicines(
         limit=limit,
         offset=offset,
         next_cursor=(
-            encode_cursor(items[-1].name, items[-1].medicine_id) if has_more else None
+            encode_cursor(
+                items[-1].name if sort == "name" else str(items[-1].price),
+                items[-1].medicine_id,
+            )
+            if has_more
+            else None
         ),
     )
 

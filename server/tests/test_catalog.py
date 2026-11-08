@@ -393,3 +393,44 @@ async def test_cursor_pagination_is_stable_with_duplicate_names_and_filters(
     assert (
         await client.get("/medicines", params={"cursor": "junk"})
     ).status_code == 422
+
+
+async def test_sort_by_price_keeps_cursor_pages_in_order(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    headers = auth_headers(admin_token)
+    supplier_id = await _create_supplier(client, headers)
+    category = await _create_category(client, headers, "Sort Cat")
+    for name, price in (
+        ("Sortone", "3.00"),
+        ("Sorttwo", "1.00"),
+        ("Sortthree", "2.00"),
+    ):
+        resp = await client.post(
+            "/medicines",
+            json={
+                "name": name,
+                "price": price,
+                "category_id": category["category_id"],
+                "supplier_id": supplier_id,
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+
+    base = {"category_id": category["category_id"], "limit": 2, "sort": "price_desc"}
+    first = (await client.get("/medicines", params=base)).json()
+    assert [m["price"] for m in first["items"]] == ["3.00", "2.00"]
+    second = (
+        await client.get("/medicines", params={**base, "cursor": first["next_cursor"]})
+    ).json()
+    assert [m["price"] for m in second["items"]] == ["1.00"]
+    assert second["next_cursor"] is None
+
+    asc = (await client.get("/medicines", params={**base, "sort": "price_asc"})).json()
+    assert [m["price"] for m in asc["items"]] == ["1.00", "2.00"]
+
+    assert (
+        await client.get("/medicines", params={"sort": "random"})
+    ).status_code == 422
