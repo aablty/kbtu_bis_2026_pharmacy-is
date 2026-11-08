@@ -9,7 +9,7 @@ import {
   dosageFormLabel,
   formatPrice,
 } from "@/features/browse-catalog";
-import { CartControl } from "@/features/cart";
+import { CartControl, CartFab } from "@/features/cart";
 import { catalogEndpoints } from "@/shared/api";
 import { Badge } from "@/shared/ui/badge";
 import {
@@ -266,6 +266,7 @@ export function MedicinePage() {
           </DialogContent>
         </Dialog>
       ) : null}
+      <CartFab />
     </AppShell>
   );
 }
