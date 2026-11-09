@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { authEndpoints, authErrorKey } from "@/shared/api";
 import { establishSession } from "@/shared/auth";
-import { useThemeStore } from "@/shared/config";
+import { useLocaleStore, useThemeStore } from "@/shared/config";
 
 interface GoogleCredentialResponse {
   credential: string;
@@ -54,6 +54,7 @@ export function GoogleSignInButton() {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const locale = useLocaleStore((state) => state.locale);
 
   // Loads the script and registers the callback once; does not depend on
   // resolvedTheme, so toggling the theme doesn't re-initialize GIS.
@@ -87,8 +88,8 @@ export function GoogleSignInButton() {
     };
   }, [navigate, t]);
 
-  // Re-renders Google's own button to match the resolved theme, without
-  // touching initialize().
+  // Re-renders Google's own button to match the resolved theme and locale,
+  // without touching initialize().
   useEffect(() => {
     if (!ready || !window.google || !containerRef.current) return;
     containerRef.current.replaceChildren();
@@ -96,9 +97,10 @@ export function GoogleSignInButton() {
       theme: resolvedTheme === "dark" ? "filled_black" : "outline",
       size: "large",
       shape: "pill",
+      locale,
       width: containerRef.current.offsetWidth || 320,
     });
-  }, [ready, resolvedTheme]);
+  }, [ready, resolvedTheme, locale]);
 
   if (!GOOGLE_CLIENT_ID) return null;
 
