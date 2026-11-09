@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
@@ -50,6 +51,7 @@ class MedicineCreate(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     manufacturer: str | None = Field(default=None, max_length=150)
     dosage_form: DosageForm | None = None
+    expiry_date: date | None = None
     price: Decimal = Field(gt=0, decimal_places=2)
     requires_prescription: bool = False
     stock_quantity: int = Field(default=0, ge=0)
@@ -62,6 +64,7 @@ class MedicineUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=150)
     manufacturer: str | None = Field(default=None, max_length=150)
     dosage_form: DosageForm | None = None
+    expiry_date: date | None = None
     price: Decimal | None = Field(default=None, gt=0, decimal_places=2)
     requires_prescription: bool | None = None
     stock_quantity: int | None = Field(default=None, ge=0)
@@ -75,6 +78,7 @@ class MedicineResponse(BaseModel):
     name: str
     manufacturer: str | None
     dosage_form: DosageForm | None
+    expiry_date: date | None
     price: Decimal
     requires_prescription: bool
     stock_quantity: int

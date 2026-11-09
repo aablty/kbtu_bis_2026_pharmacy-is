@@ -29,7 +29,7 @@ export type Values = Record<string, string>;
 
 export interface FieldDef {
   name: string;
-  type: "text" | "number" | "decimal" | "bool" | "select";
+  type: "text" | "number" | "decimal" | "bool" | "select" | "date";
   required?: boolean;
   options?: { value: string; label: string }[];
 }
@@ -286,9 +286,19 @@ export function CrudPanel<T>({
                   ) : (
                     <Input
                       id={id}
-                      type={f.type === "text" ? "text" : "number"}
+                      type={
+                        f.type === "date"
+                          ? "date"
+                          : f.type === "text"
+                            ? "text"
+                            : "number"
+                      }
                       step={f.type === "decimal" ? "0.01" : undefined}
-                      min={f.type === "text" ? undefined : 0}
+                      min={
+                        f.type === "number" || f.type === "decimal"
+                          ? 0
+                          : undefined
+                      }
                       value={value}
                       onChange={(e) => setField(f.name, e.target.value)}
                     />

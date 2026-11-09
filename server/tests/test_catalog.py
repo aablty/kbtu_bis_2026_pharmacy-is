@@ -434,3 +434,32 @@ async def test_sort_by_price_keeps_cursor_pages_in_order(
     assert (
         await client.get("/medicines", params={"sort": "random"})
     ).status_code == 422
+
+
+async def test_expiry_date_is_stored_and_can_be_cleared(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    headers = auth_headers(admin_token)
+    supplier_id = await _create_supplier(client, headers)
+    category = await _create_category(client, headers, "Expiry Cat")
+    resp = await client.post(
+        "/medicines",
+        json={
+            "name": "Expiring",
+            "price": "5.00",
+            "category_id": category["category_id"],
+            "supplier_id": supplier_id,
+            "expiry_date": "2027-06-30",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201, resp.text
+    medicine_id = resp.json()["medicine_id"]
+    assert resp.json()["expiry_date"] == "2027-06-30"
+
+    resp = await client.put(
+        f"/medicines/{medicine_id}", json={"expiry_date": None}, headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["expiry_date"] is None

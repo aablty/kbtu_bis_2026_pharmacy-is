@@ -198,10 +198,27 @@ export function MedicinePage() {
             </div>
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 border-t pt-5 text-sm">
-              <dt className="text-muted-foreground">
-                {t("medicine.dosageForm")}
-              </dt>
-              <dd>{dosageFormLabel(data.dosage_form, t)}</dd>
+              {data.dosage_form ? (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("medicine.dosageForm")}
+                  </dt>
+                  <dd>{dosageFormLabel(data.dosage_form, t)}</dd>
+                </>
+              ) : null}
+              {data.expiry_date ? (
+                <>
+                  <dt className="text-muted-foreground">
+                    {t("medicine.expiry")}
+                  </dt>
+                  <dd>
+                    {new Intl.DateTimeFormat(i18n.language, {
+                      dateStyle: "medium",
+                      timeZone: "UTC",
+                    }).format(new Date(data.expiry_date))}
+                  </dd>
+                </>
+              ) : null}
               <dt className="text-muted-foreground">
                 {t("medicine.prescription")}
               </dt>

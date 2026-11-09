@@ -7,6 +7,7 @@ const medicine = (over: Partial<Medicine> = {}): Medicine => ({
   name: "Test",
   manufacturer: null,
   dosage_form: null,
+  expiry_date: null,
   price: "100.00",
   requires_prescription: false,
   stock_quantity: 3,

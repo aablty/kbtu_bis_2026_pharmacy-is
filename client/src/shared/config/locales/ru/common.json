@@ -213,7 +213,8 @@
     "availability": "Наличие",
     "prescription": "Рецепт",
     "noPrescription": "Не требуется",
-    "zoom": "Нажмите, чтобы увеличить"
+    "zoom": "Нажмите, чтобы увеличить",
+    "expiry": "Срок годности"
   },
   "cart": {
     "title": "Корзина",
@@ -386,7 +387,8 @@
       "category_id": "Категория",
       "supplier": "Поставщик",
       "supplier_id": "Поставщик",
-      "rx": "Rx"
+      "rx": "Rx",
+      "expiry_date": "Срок годности"
     }
   },
   "analytics": {

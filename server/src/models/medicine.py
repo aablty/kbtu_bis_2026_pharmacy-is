@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -33,6 +34,7 @@ class Medicine(Base):
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
+    expiry_date: Mapped[date | None] = mapped_column(Date)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     requires_prescription: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

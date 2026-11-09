@@ -213,7 +213,8 @@
     "availability": "Availability",
     "prescription": "Prescription",
     "noPrescription": "Not required",
-    "zoom": "Click to enlarge"
+    "zoom": "Click to enlarge",
+    "expiry": "Expiry date"
   },
   "cart": {
     "title": "Cart",
@@ -386,7 +387,8 @@
       "category_id": "Category",
       "supplier": "Supplier",
       "supplier_id": "Supplier",
-      "rx": "Rx"
+      "rx": "Rx",
+      "expiry_date": "Expiry date"
     }
   },
   "analytics": {
