@@ -64,6 +64,8 @@ async def test_admin_full_crud_flow(
     assert medicine["stock_quantity"] == 0
     assert medicine["requires_prescription"] is False
 
+    # stock_quantity isn't directly writable - it's batch-derived; PUT
+    # silently ignores it (unknown field) and only flips requires_prescription.
     resp = await client.put(
         f"/medicines/{medicine['medicine_id']}",
         json={"stock_quantity": 50, "requires_prescription": True},
@@ -71,8 +73,22 @@ async def test_admin_full_crud_flow(
     )
     assert resp.status_code == 200
     updated = resp.json()
-    assert updated["stock_quantity"] == 50
+    assert updated["stock_quantity"] == 0
     assert updated["requires_prescription"] is True
+
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine["medicine_id"],
+            "supplier_id": supplier_id,
+            "quantity": 50,
+            "expiry_date": "2099-01-01",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201, resp.text
+    resp = await client.get(f"/medicines/{medicine['medicine_id']}")
+    assert resp.json()["stock_quantity"] == 50
 
     resp = await client.get(f"/medicines/{medicine['medicine_id']}")
     assert resp.status_code == 200
@@ -372,13 +388,24 @@ async def test_cursor_pagination_is_stable_with_duplicate_names_and_filters(
             json={
                 "name": "Cursorin",  # identical names: only the id tiebreak orders them
                 "price": price,
-                "stock_quantity": 0 if i == 0 else 5,
                 "category_id": category["category_id"],
                 "supplier_id": supplier_id,
             },
             headers=headers,
         )
         assert resp.status_code == 201, resp.text
+        if i != 0:  # stock is batch-derived now - leave the first one at 0
+            resp = await client.post(
+                "/batches",
+                json={
+                    "medicine_id": resp.json()["medicine_id"],
+                    "supplier_id": supplier_id,
+                    "quantity": 5,
+                    "expiry_date": "2099-01-01",
+                },
+                headers=headers,
+            )
+            assert resp.status_code == 201, resp.text
 
     base = {"category_id": category["category_id"], "limit": 2}
     seen: list[int] = []
@@ -450,41 +477,13 @@ async def test_sort_by_price_keeps_cursor_pages_in_order(
     ).status_code == 422
 
 
-async def test_expiry_date_is_stored_and_can_be_cleared(
-    client: AsyncClient, make_user_with_token: MakeUserWithToken
-) -> None:
-    _, admin_token = await make_user_with_token(UserRole.ADMIN)
-    headers = auth_headers(admin_token)
-    supplier_id = await _create_supplier(client, headers)
-    category = await _create_category(client, headers, "Expiry Cat")
-    resp = await client.post(
-        "/medicines",
-        json={
-            "name": "Expiring",
-            "price": "5.00",
-            "category_id": category["category_id"],
-            "supplier_id": supplier_id,
-            "expiry_date": "2027-06-30",
-        },
-        headers=headers,
-    )
-    assert resp.status_code == 201, resp.text
-    medicine_id = resp.json()["medicine_id"]
-    assert resp.json()["expiry_date"] == "2027-06-30"
-
-    resp = await client.put(
-        f"/medicines/{medicine_id}", json={"expiry_date": None}, headers=headers
-    )
-    assert resp.status_code == 200, resp.text
-    assert resp.json()["expiry_date"] is None
-
-
 async def test_medicine_card_shows_nearest_batch_expiry_not_static_field(
     client: AsyncClient, make_user_with_token: MakeUserWithToken
 ) -> None:
-    """MEDICINES.expiry_date predates STOCK_BATCHES and is never updated as
-    stock turns over - the public card must show the nearest in-stock batch's
-    expiry instead, once any batch exists."""
+    """expiry_date is entirely batch-derived - there's no way to set it at
+    creation anymore (MedicineCreate has no such field), and a medicine with
+    no in-stock batch shows no expiry at all, matching its stock_quantity of 0
+    (out of stock, nothing to show an expiry for)."""
     _, admin_token = await make_user_with_token(UserRole.ADMIN)
     headers = auth_headers(admin_token)
     supplier_id = await _create_supplier(client, headers)
@@ -496,15 +495,15 @@ async def test_medicine_card_shows_nearest_batch_expiry_not_static_field(
             "price": "5.00",
             "category_id": category["category_id"],
             "supplier_id": supplier_id,
-            "expiry_date": "2099-01-01",  # stale static value, should be overridden
         },
         headers=headers,
     )
     medicine_id = resp.json()["medicine_id"]
 
-    # No batches yet - falls back to the static column.
+    # No batches yet - out of stock, no expiry to show.
     resp = await client.get(f"/medicines/{medicine_id}")
-    assert resp.json()["expiry_date"] == "2099-01-01"
+    assert resp.json()["stock_quantity"] == 0
+    assert resp.json()["expiry_date"] is None
 
     await client.post(
         "/batches",

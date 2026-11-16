@@ -17,13 +17,13 @@ export interface CategoryInput {
 }
 
 export interface MedicineInput {
+  // No stock_quantity/expiry_date - both are batch-derived (see
+  // client/src/pages/staff/ui/stock-panel.tsx, the Receive Stock flow).
   name: string;
   manufacturer: string | null;
   dosage_form: import("./catalog-types").DosageForm | null;
-  expiry_date: string | null;
   price: string;
   requires_prescription: boolean;
-  stock_quantity: number;
   reorder_threshold: number;
   category_id: number;
   supplier_id: number;

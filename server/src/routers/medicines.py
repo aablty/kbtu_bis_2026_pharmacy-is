@@ -31,13 +31,10 @@ BatchServiceDep = Annotated[BatchService, Depends(get_batch_service)]
 def _with_batch_expiry(
     response: MedicineResponse, expiry: date | None
 ) -> MedicineResponse:
-    # Nearest in-stock batch's expiry wins over the static MEDICINES.expiry_date
-    # column, which predates batches and is never updated as stock turns over.
-    # No in-stock batch (none received yet, or none left) - fall back to the
-    # static column so it still shows something for not-yet-migrated data.
-    if expiry is not None:
-        return response.model_copy(update={"expiry_date": expiry})
-    return response
+    # expiry_date is entirely batch-derived now: the nearest expiry among
+    # in-stock batches, or None when there's no in-stock batch at all (same
+    # condition stock_quantity == 0 reduces to - no batches, nothing to show).
+    return response.model_copy(update={"expiry_date": expiry})
 
 
 @router.get("", response_model=MedicineListResponse)

@@ -285,10 +285,8 @@ function MedicinesTab() {
         label: t(`dosageForms.${form}`),
       })),
     },
-    { name: "expiry_date", type: "date" },
     { name: "price", type: "decimal", required: true },
     { name: "requires_prescription", type: "bool" },
-    { name: "stock_quantity", type: "number", required: true },
     { name: "reorder_threshold", type: "number" },
     {
       name: "category_id",
@@ -346,10 +344,8 @@ function MedicinesTab() {
         name: m.name,
         manufacturer: str(m.manufacturer),
         dosage_form: str(m.dosage_form),
-        expiry_date: m.expiry_date ?? "",
         price: m.price,
         requires_prescription: String(m.requires_prescription),
-        stock_quantity: String(m.stock_quantity),
         reorder_threshold: String(m.reorder_threshold),
         category_id: String(m.category_id),
         supplier_id: String(m.supplier_id),
@@ -361,10 +357,8 @@ function MedicinesTab() {
           dosage_form: DOSAGE_FORMS.includes(v.dosage_form as DosageForm)
             ? (v.dosage_form as DosageForm)
             : null,
-          expiry_date: v.expiry_date || null,
           price: v.price,
           requires_prescription: v.requires_prescription === "true",
-          stock_quantity: Number(v.stock_quantity),
           reorder_threshold: Number(v.reorder_threshold || 0),
           category_id: Number(v.category_id),
           supplier_id: Number(v.supplier_id),
