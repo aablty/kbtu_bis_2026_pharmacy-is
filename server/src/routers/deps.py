@@ -3,7 +3,7 @@ from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -25,7 +25,14 @@ from src.services.prescription_service import PrescriptionService
 from src.services.sale_service import SaleService
 from src.services.supplier_service import SupplierService
 
-_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+# HTTPBearer, not OAuth2PasswordBearer: this API takes JSON {email, password}
+# at /auth/login, not OAuth2PasswordRequestForm's form-encoded
+# username/password. OAuth2PasswordBearer's Swagger "Authorize" dialog always
+# labels its fields "username"/"password" per the OAuth2 spec and POSTs them
+# form-encoded - that doesn't match this login endpoint at all. HTTPBearer's
+# dialog is just a single token field: call /auth/login's "Try it out" to get
+# a token, paste it there.
+_bearer_scheme = HTTPBearer(auto_error=False)
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -96,7 +103,9 @@ def get_prescription_service(
 
 
 async def get_current_user(
-    token: Annotated[str | None, Depends(_oauth2_scheme)],
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)
+    ],
     session: DbSession,
 ) -> User:
     credentials_error = HTTPException(
@@ -104,8 +113,9 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if token is None:
+    if credentials is None:
         raise credentials_error
+    token = credentials.credentials
 
     try:
         payload = decode_token(token)
