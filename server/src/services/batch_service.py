@@ -44,6 +44,11 @@ class BatchService:
             raise BatchNotFoundError(barcode)
         return batch
 
+    async def get_earliest_expiry_bulk(
+        self, medicine_ids: list[int]
+    ) -> dict[int, date]:
+        return await self._batches.get_earliest_expiry_bulk(medicine_ids)
+
     async def get_medicine_name(self, medicine_id: int) -> str:
         medicine = await self._medicines.get_by_id(medicine_id)
         if medicine is None:

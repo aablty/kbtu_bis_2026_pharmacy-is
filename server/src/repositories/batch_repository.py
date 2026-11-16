@@ -1,6 +1,6 @@
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.stock_batch import OrderItemBatch, StockBatch
@@ -38,6 +38,24 @@ class BatchRepository:
             select(StockBatch).where(StockBatch.barcode == barcode)
         )
         return result.scalar_one_or_none()
+
+    async def get_earliest_expiry_bulk(
+        self, medicine_ids: list[int]
+    ) -> dict[int, date]:
+        """Nearest expiry date among each medicine's in-stock batches - what
+        the public catalog should show instead of MEDICINES.expiry_date,
+        which predates batches and never changes as stock turns over."""
+        if not medicine_ids:
+            return {}
+        result = await self._session.execute(
+            select(StockBatch.medicine_id, func.min(StockBatch.expiry_date))
+            .where(
+                StockBatch.medicine_id.in_(medicine_ids),
+                StockBatch.quantity_remaining > 0,
+            )
+            .group_by(StockBatch.medicine_id)
+        )
+        return dict(result.all())
 
     async def list_fefo_candidates(self, medicine_id: int) -> list[StockBatch]:
         result = await self._session.execute(

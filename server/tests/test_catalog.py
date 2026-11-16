@@ -477,3 +477,58 @@ async def test_expiry_date_is_stored_and_can_be_cleared(
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["expiry_date"] is None
+
+
+async def test_medicine_card_shows_nearest_batch_expiry_not_static_field(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    """MEDICINES.expiry_date predates STOCK_BATCHES and is never updated as
+    stock turns over - the public card must show the nearest in-stock batch's
+    expiry instead, once any batch exists."""
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    headers = auth_headers(admin_token)
+    supplier_id = await _create_supplier(client, headers)
+    category = await _create_category(client, headers, "Expiry Batch Cat")
+    resp = await client.post(
+        "/medicines",
+        json={
+            "name": "Batchy",
+            "price": "5.00",
+            "category_id": category["category_id"],
+            "supplier_id": supplier_id,
+            "expiry_date": "2099-01-01",  # stale static value, should be overridden
+        },
+        headers=headers,
+    )
+    medicine_id = resp.json()["medicine_id"]
+
+    # No batches yet - falls back to the static column.
+    resp = await client.get(f"/medicines/{medicine_id}")
+    assert resp.json()["expiry_date"] == "2099-01-01"
+
+    await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 10,
+            "expiry_date": "2026-12-01",
+        },
+        headers=headers,
+    )
+    await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 5,
+            "expiry_date": "2027-03-01",
+        },
+        headers=headers,
+    )
+
+    resp = await client.get(f"/medicines/{medicine_id}")
+    assert resp.json()["expiry_date"] == "2026-12-01"
+
+    resp = await client.get("/medicines", params={"q": "Batchy"})
+    assert resp.json()["items"][0]["expiry_date"] == "2026-12-01"
