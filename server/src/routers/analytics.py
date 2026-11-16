@@ -6,6 +6,7 @@ from src.models.enums import UserRole
 from src.routers.deps import get_analytics_service, require_role
 from src.schemas.analytics import (
     BestSellerResponse,
+    ExpiringBatchResponse,
     LowStockMedicineResponse,
     RevenueReport,
 )
@@ -31,6 +32,13 @@ async def best_sellers(
 async def low_stock(service: AnalyticsServiceDep) -> list[LowStockMedicineResponse]:
     medicines = await service.low_stock()
     return [LowStockMedicineResponse.model_validate(m) for m in medicines]
+
+
+@router.get("/expiring-batches", response_model=list[ExpiringBatchResponse])
+async def expiring_batches(
+    service: AnalyticsServiceDep, within_days: Annotated[int, Query(ge=1, le=365)] = 30
+) -> list[ExpiringBatchResponse]:
+    return await service.expiring_batches(within_days)
 
 
 @router.get("/revenue", response_model=RevenueReport)

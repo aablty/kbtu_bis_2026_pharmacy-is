@@ -15,6 +15,7 @@ from src.models.user import User
 from src.repositories.user_repository import UserRepository
 from src.services.analytics_service import AnalyticsService
 from src.services.auth_service import AuthService
+from src.services.batch_service import BatchService
 from src.services.category_service import CategoryService
 from src.services.medicine_service import MedicineService
 from src.services.notification_service import NotificationService
@@ -43,6 +44,10 @@ def get_auth_service(
 
 def get_supplier_service(session: DbSession) -> SupplierService:
     return SupplierService(session)
+
+
+def get_batch_service(session: DbSession) -> BatchService:
+    return BatchService(session)
 
 
 def get_analytics_service(session: DbSession) -> AnalyticsService:

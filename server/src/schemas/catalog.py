@@ -54,6 +54,9 @@ class MedicineCreate(BaseModel):
     expiry_date: date | None = None
     price: Decimal = Field(gt=0, decimal_places=2)
     requires_prescription: bool = False
+    # shortcut: direct edits can desync from the batch ledger once batches
+    # exist for this medicine; upgrade would route stock changes through
+    # /batches only and drop this field.
     stock_quantity: int = Field(default=0, ge=0)
     reorder_threshold: int = Field(default=0, ge=0)
     category_id: int
@@ -67,6 +70,7 @@ class MedicineUpdate(BaseModel):
     expiry_date: date | None = None
     price: Decimal | None = Field(default=None, gt=0, decimal_places=2)
     requires_prescription: bool | None = None
+    # shortcut: see MedicineCreate.stock_quantity.
     stock_quantity: int | None = Field(default=None, ge=0)
     reorder_threshold: int | None = Field(default=None, ge=0)
     category_id: int | None = None

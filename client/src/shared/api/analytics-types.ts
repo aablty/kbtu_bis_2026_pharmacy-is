@@ -20,3 +20,11 @@ export interface RevenueReport {
   days: RevenueDay[];
   total_revenue: string;
 }
+
+export interface ExpiringBatch {
+  batch_id: number;
+  medicine_id: number;
+  medicine_name: string;
+  expiry_date: string;
+  quantity_remaining: number;
+}

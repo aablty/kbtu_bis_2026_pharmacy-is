@@ -109,54 +109,16 @@ class MedicineRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one()
 
-    async def decrement_stock(self, medicine_id: int, quantity: int) -> bool:
-        """Atomic conditional decrement - the WHERE guard means two concurrent
-        orders can't both succeed in overselling the last units, without
-        needing to check a version column for this particular race. Still
-        bumps version, so the sales flow's optimistic-locking check (below)
-        can detect a stock change made via this path too, not just its own."""
-        stmt = (
-            update(Medicine)
-            .where(
-                Medicine.medicine_id == medicine_id, Medicine.stock_quantity >= quantity
-            )
-            .values(
-                stock_quantity=Medicine.stock_quantity - quantity,
-                version=Medicine.version + 1,
-            )
-        )
-        result = await self._session.execute(stmt)
-        return result.rowcount == 1  # ty: ignore[unresolved-attribute]
-
-    async def increment_stock(self, medicine_id: int, quantity: int) -> None:
+    async def adjust_stock_quantity(self, medicine_id: int, delta: int) -> None:
+        """Keeps the cached stock_quantity total in sync with batch-level
+        deductions/restocks. Core-style UPDATE against the mapped class, so
+        SQLAlchemy auto-refreshes any already-loaded Medicine with this PK in
+        this session's identity map - the same trick decrement_stock relies
+        on - meaning callers that already hold the Medicine object see the
+        new total with no extra query."""
         stmt = (
             update(Medicine)
             .where(Medicine.medicine_id == medicine_id)
-            .values(
-                stock_quantity=Medicine.stock_quantity + quantity,
-                version=Medicine.version + 1,
-            )
+            .values(stock_quantity=Medicine.stock_quantity + delta)
         )
         await self._session.execute(stmt)
-
-    async def decrement_stock_optimistic(
-        self, medicine_id: int, quantity: int, expected_version: int
-    ) -> bool:
-        """Optimistic-locking decrement for the POS sale flow: fails if either
-        the stock is insufficient *or* anything changed this row since it was
-        read (version mismatch) - a concurrent order, cancellation, or another
-        sale. Callers distinguish the two causes with a follow-up get_by_id."""
-        stmt = (
-            update(Medicine)
-            .where(
-                Medicine.medicine_id == medicine_id,
-                Medicine.version == expected_version,
-                Medicine.stock_quantity >= quantity,
-            )
-            .values(
-                stock_quantity=Medicine.stock_quantity - quantity,
-                version=Medicine.version + 1,
-            )
-        )
-        result = await self._session.execute(stmt)
-        return result.rowcount == 1  # ty: ignore[unresolved-attribute]

@@ -20,6 +20,14 @@ import {
   ChartTooltipContent,
 } from "@/shared/ui/chart";
 import { ListEmpty } from "@/shared/ui/list-empty";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/toggle-group";
 import { fillRevenueDays } from "../model/revenue-series";
 import { stockLevel } from "../model/stock-level";
@@ -27,6 +35,7 @@ import { stockLevel } from "../model/stock-level";
 const RANGES = [7, 30, 90] as const;
 const TOP_N = 10;
 const LOW_STOCK_PAGE = 5;
+const EXPIRING_WITHIN_DAYS = 30;
 const LEVEL_CLASS = {
   out: "border-transparent bg-red-500/15 text-red-600 dark:text-red-400",
   "very-low":
@@ -56,6 +65,10 @@ export function AnalyticsPanel() {
   const lowStock = useQuery({
     queryKey: ["analytics", "low-stock"],
     queryFn: analyticsEndpoints.lowStock,
+  });
+  const expiringBatches = useQuery({
+    queryKey: ["analytics", "expiring-batches", EXPIRING_WITHIN_DAYS],
+    queryFn: () => analyticsEndpoints.expiringBatches(EXPIRING_WITHIN_DAYS),
   });
 
   const lowItems = lowStock.data ?? [];
@@ -271,6 +284,48 @@ export function AnalyticsPanel() {
           )}
         </section>
       </div>
+
+      <section className={SECTION}>
+        <h2 className="mb-4 text-sm font-semibold">
+          {t("analytics.expiringBatches")}
+        </h2>
+        {expiringBatches.data?.length === 0 ? (
+          <ListEmpty
+            icon={CheckCircle2Icon}
+            title={t("analytics.expiringBatchesNone")}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("admin.fields.name")}</TableHead>
+                <TableHead>{t("analytics.expiryDate")}</TableHead>
+                <TableHead className="text-right">
+                  {t("analytics.quantityRemaining")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(expiringBatches.data ?? []).map((b) => (
+                <TableRow key={b.batch_id}>
+                  <TableCell className="min-w-0 truncate">
+                    {b.medicine_name}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {new Intl.DateTimeFormat(i18n.language, {
+                      dateStyle: "medium",
+                      timeZone: "UTC",
+                    }).format(new Date(b.expiry_date))}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {b.quantity_remaining}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
     </div>
   );
 }

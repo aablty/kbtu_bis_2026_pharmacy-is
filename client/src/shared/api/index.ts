@@ -1,5 +1,7 @@
 export { adminEndpoints } from "./admin-endpoints";
 export type {
+  Batch,
+  BatchInput,
   CategoryInput,
   MedicineInput,
   Sale,
@@ -11,6 +13,7 @@ export type {
 export { analyticsEndpoints } from "./analytics-endpoints";
 export type {
   BestSeller,
+  ExpiringBatch,
   LowStockMedicine,
   RevenueDay,
   RevenueReport,

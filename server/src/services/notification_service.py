@@ -7,6 +7,7 @@ from src.models.enums import NotificationType, UserRole
 from src.models.medicine import Medicine
 from src.models.notification import Notification
 from src.models.user import User
+from src.repositories.batch_repository import BatchRepository
 from src.repositories.notification_repository import NotificationRepository
 from src.repositories.user_repository import UserRepository
 
@@ -18,6 +19,7 @@ class NotificationService:
         self._session = session
         self._notifications = NotificationRepository(session)
         self._users = UserRepository(session)
+        self._batches = BatchRepository(session)
         # Cached for this instance's lifetime - one per request via DI, so
         # this avoids re-querying staff once per low-stock item in a
         # multi-item order/sale instead of once per request.
@@ -101,6 +103,52 @@ class NotificationService:
                     "threshold": medicine.reorder_threshold,
                 },
             )
+
+    async def notify_staff_batches_expiring_soon(
+        self, batches_within_days: int = 30
+    ) -> None:
+        """Same shape as notify_staff_low_stock, but driven by a fresh query
+        over STOCK_BATCHES rather than an already-loaded object, since this
+        doesn't naturally run inside an existing stock-mutating transaction -
+        it's invoked by its own periodic scheduler job instead."""
+        staff = await self._staff()
+        if not staff:
+            return
+
+        batches = await self._batches.list_expiring_soon(batches_within_days)
+        if not batches:
+            return
+
+        for batch in batches:
+            already_notified = await self._notifications.list_user_ids_with_unread(
+                [user.user_id for user in staff],
+                NotificationType.BATCH_EXPIRING,
+                batch.batch_id,
+            )
+            recipients = [
+                user for user in staff if user.user_id not in already_notified
+            ]
+            if not recipients:
+                continue
+
+            message = (
+                f"Batch #{batch.batch_id} for medicine {batch.medicine_id} expires "
+                f"{batch.expiry_date} ({batch.quantity_remaining} units remaining)."
+            )
+            for user in recipients:
+                self.notify_user(
+                    user.user_id,
+                    NotificationType.BATCH_EXPIRING,
+                    message,
+                    related_id=batch.batch_id,
+                    message_key="batch_expiring",
+                    message_params={
+                        "batch_id": batch.batch_id,
+                        "medicine_id": batch.medicine_id,
+                        "expiry_date": str(batch.expiry_date),
+                        "quantity_remaining": batch.quantity_remaining,
+                    },
+                )
 
     async def get(self, notification_id: int) -> Notification:
         notification = await self._notifications.get_by_id(notification_id)

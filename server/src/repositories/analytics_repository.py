@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import Date, cast, func, select
@@ -11,6 +11,7 @@ from src.models.order_item import OrderItem
 from src.models.payment import Payment
 from src.models.sale import Sale
 from src.models.sale_item import SaleItem
+from src.models.stock_batch import StockBatch
 
 
 class AnalyticsRepository:
@@ -70,6 +71,34 @@ class AnalyticsRepository:
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def expiring_batches(
+        self, within_days: int
+    ) -> list[tuple[int, int, str, date, int]]:
+        cutoff = (datetime.now(UTC) + timedelta(days=within_days)).date()
+        stmt = (
+            select(
+                StockBatch.batch_id,
+                StockBatch.medicine_id,
+                Medicine.name,
+                StockBatch.expiry_date,
+                StockBatch.quantity_remaining,
+            )
+            .join(Medicine, Medicine.medicine_id == StockBatch.medicine_id)
+            .where(StockBatch.expiry_date <= cutoff, StockBatch.quantity_remaining > 0)
+            .order_by(StockBatch.expiry_date.asc())
+        )
+        result = await self._session.execute(stmt)
+        return [
+            (
+                row.batch_id,
+                row.medicine_id,
+                row.name,
+                row.expiry_date,
+                row.quantity_remaining,
+            )
+            for row in result
+        ]
 
     async def daily_revenue(self, since: datetime) -> list[tuple[date, Decimal]]:
         order_revenue = select(

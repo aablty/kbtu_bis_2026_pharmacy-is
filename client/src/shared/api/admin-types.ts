@@ -50,3 +50,21 @@ export interface SaleCreate {
   items: { medicine_id: number; quantity: number }[];
   customer_id: number | null;
 }
+
+export interface BatchInput {
+  medicine_id: number;
+  supplier_id: number;
+  quantity: number;
+  expiry_date: string;
+}
+
+export interface Batch {
+  batch_id: number;
+  medicine_id: number;
+  supplier_id: number;
+  quantity_received: number;
+  quantity_remaining: number;
+  expiry_date: string;
+  barcode: string;
+  received_at: string;
+}

@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -14,6 +15,7 @@ from src.models.order import Order
 from src.models.sale import Sale
 from src.models.supplier import Supplier
 from src.models.user import User
+from src.repositories.batch_repository import BatchRepository
 from src.repositories.category_repository import CategoryRepository
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.sale_repository import SaleRepository
@@ -85,6 +87,10 @@ async def test_concurrent_idempotency_key_race_returns_winner_not_500() -> None:
                     stock_quantity=10,
                 )
                 MedicineRepository(session_zero).add(medicine)
+                await session_zero.flush()
+                await BatchRepository(session_zero).create(
+                    medicine.medicine_id, supplier.supplier_id, 10, date(2099, 12, 31)
+                )
                 await session_zero.commit()
                 customer_id = customer.user_id
                 medicine_id = medicine.medicine_id
@@ -196,6 +202,9 @@ async def test_concurrent_order_completion_returns_winner_not_500() -> None:
                 )
                 MedicineRepository(session_zero).add(medicine)
                 await session_zero.flush()
+                await BatchRepository(session_zero).create(
+                    medicine.medicine_id, supplier.supplier_id, 10, date(2099, 12, 31)
+                )
                 customer_id = customer.user_id
                 employee_id = employee.user_id
                 medicine_id = medicine.medicine_id

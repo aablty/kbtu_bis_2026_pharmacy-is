@@ -1,5 +1,6 @@
 import type {
   BestSeller,
+  ExpiringBatch,
   LowStockMedicine,
   RevenueReport,
 } from "./analytics-types";
@@ -18,5 +19,11 @@ export const analyticsEndpoints = {
   revenue: (days: number) =>
     apiClient
       .get<RevenueReport>("/analytics/revenue", { params: { days } })
+      .then((r) => r.data),
+  expiringBatches: (withinDays: number) =>
+    apiClient
+      .get<ExpiringBatch[]>("/analytics/expiring-batches", {
+        params: { within_days: withinDays },
+      })
       .then((r) => r.data),
 };

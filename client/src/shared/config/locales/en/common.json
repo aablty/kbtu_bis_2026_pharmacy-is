@@ -313,7 +313,8 @@
     "tabs": {
       "orders": "Orders",
       "prescriptions": "Prescriptions",
-      "pos": "Point of sale"
+      "pos": "Point of sale",
+      "stock": "Receive stock"
     },
     "orders": {
       "status": "Status",
@@ -346,6 +347,19 @@
       "selling": "Recording…",
       "receipt": "Sale #{{id}} recorded · {{total}}",
       "recent": "Recent sales"
+    },
+    "stock": {
+      "searchMedicine": "Search medicines",
+      "selectedMedicine": "Medicine",
+      "change": "Change",
+      "noneSelected": "No medicine selected.",
+      "supplier": "Supplier",
+      "quantity": "Quantity",
+      "expiryDate": "Expiry date",
+      "submit": "Receive stock",
+      "receiving": "Receiving…",
+      "received": "Stock received. Batch barcode:",
+      "another": "Receive another batch"
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",
@@ -412,7 +426,11 @@
       "low": "Running low"
     },
     "revenueCaption": "Last {{days}} days; days without sales show zero",
-    "overview": "Overview"
+    "overview": "Overview",
+    "expiringBatches": "Expiring soon",
+    "expiringBatchesNone": "No batches expiring soon.",
+    "expiryDate": "Expiry date",
+    "quantityRemaining": "Remaining"
   },
   "orders": {
     "title": "Orders",

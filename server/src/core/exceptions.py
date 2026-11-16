@@ -182,3 +182,7 @@ class InvalidCurrentPasswordError(DomainError):
 
 class PasswordNotSetError(DomainError):
     """A Google-only account has no password to verify or change."""
+
+
+class BatchNotFoundError(DomainError):
+    pass

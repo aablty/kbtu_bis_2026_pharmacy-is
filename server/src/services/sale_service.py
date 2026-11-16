@@ -3,11 +3,9 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import (
-    InsufficientStockError,
     InvalidSaleCustomerError,
     MedicineNotFoundError,
     SaleNotFoundError,
-    StockVersionConflictError,
     UserNotFoundError,
 )
 from src.models.enums import UserRole
@@ -19,6 +17,7 @@ from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.sale_repository import SaleRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.sales import SaleItemCreate
+from src.services.batch_service import BatchService
 from src.services.notification_service import NotificationService
 
 
@@ -29,6 +28,7 @@ class SaleService:
         self._session = session
         self._sales = SaleRepository(session)
         self._medicines = MedicineRepository(session)
+        self._batch_service = BatchService(session)
         self._users = UserRepository(session)
         self._notifications = notification_service
 
@@ -64,19 +64,7 @@ class SaleService:
         await self._session.flush()  # need sale.sale_id for the item rows below
 
         for medicine, item in zip(medicines, items, strict=True):
-            expected_version = medicine.version
-            ok = await self._medicines.decrement_stock_optimistic(
-                medicine.medicine_id, item.quantity, expected_version
-            )
-            if not ok:
-                # Distinguish *why* it failed with a fresh read, so the caller
-                # (cashier UI) knows whether to retry or tell the customer
-                # the item is out of stock - two different situations that
-                # both land on "0 rows updated" otherwise.
-                fresh = await self._medicines.get_by_id(medicine.medicine_id)
-                if fresh is not None and fresh.stock_quantity < item.quantity:
-                    raise InsufficientStockError(medicine.medicine_id)
-                raise StockVersionConflictError(medicine.medicine_id)
+            await self._batch_service.deduct_fefo_optimistic(medicine, item.quantity)
             self._sales.add_item(
                 SaleItem(
                     sale_id=sale.sale_id,

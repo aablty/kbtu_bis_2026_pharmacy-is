@@ -19,6 +19,14 @@ class LowStockMedicineResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ExpiringBatchResponse(BaseModel):
+    batch_id: int
+    medicine_id: int
+    medicine_name: str
+    expiry_date: date
+    quantity_remaining: int
+
+
 class RevenueDayResponse(BaseModel):
     date: date
     total_revenue: Decimal

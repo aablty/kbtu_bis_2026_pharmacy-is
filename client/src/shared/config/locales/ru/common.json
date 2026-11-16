@@ -313,7 +313,8 @@
     "tabs": {
       "orders": "Заказы",
       "prescriptions": "Рецепты",
-      "pos": "Касса"
+      "pos": "Касса",
+      "stock": "Приёмка товара"
     },
     "orders": {
       "status": "Статус",
@@ -346,6 +347,19 @@
       "selling": "Записываем…",
       "receipt": "Продажа №{{id}} записана · {{total}}",
       "recent": "Последние продажи"
+    },
+    "stock": {
+      "searchMedicine": "Поиск лекарств",
+      "selectedMedicine": "Лекарство",
+      "change": "Изменить",
+      "noneSelected": "Лекарство не выбрано.",
+      "supplier": "Поставщик",
+      "quantity": "Количество",
+      "expiryDate": "Срок годности",
+      "submit": "Принять товар",
+      "receiving": "Принимаем…",
+      "received": "Товар принят. Штрихкод партии:",
+      "another": "Принять ещё одну партию"
     },
     "errors": {
       "generic": "Что-то пошло не так. Попробуйте ещё раз.",
@@ -412,7 +426,11 @@
       "low": "Заканчивается"
     },
     "revenueCaption": "Последние {{days}} дн.; дни без продаж — ноль",
-    "overview": "Обзор"
+    "overview": "Обзор",
+    "expiringBatches": "Скоро истекает срок",
+    "expiringBatchesNone": "Нет партий с истекающим сроком.",
+    "expiryDate": "Срок годности",
+    "quantityRemaining": "Остаток"
   },
   "orders": {
     "title": "Заказы",

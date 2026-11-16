@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.medicine import Medicine
 from src.repositories.analytics_repository import AnalyticsRepository
-from src.schemas.analytics import BestSellerResponse, RevenueDayResponse, RevenueReport
+from src.schemas.analytics import (
+    BestSellerResponse,
+    ExpiringBatchResponse,
+    RevenueDayResponse,
+    RevenueReport,
+)
 
 
 class AnalyticsService:
@@ -21,6 +26,19 @@ class AnalyticsService:
 
     async def low_stock(self) -> list[Medicine]:
         return await self._repo.low_stock()
+
+    async def expiring_batches(self, within_days: int) -> list[ExpiringBatchResponse]:
+        rows = await self._repo.expiring_batches(within_days)
+        return [
+            ExpiringBatchResponse(
+                batch_id=batch_id,
+                medicine_id=medicine_id,
+                medicine_name=name,
+                expiry_date=expiry,
+                quantity_remaining=remaining,
+            )
+            for batch_id, medicine_id, name, expiry, remaining in rows
+        ]
 
     async def revenue(self, days: int) -> RevenueReport:
         since = datetime.now(UTC) - timedelta(days=days)

@@ -40,13 +40,31 @@ async def _setup_medicine(
             "price": price,
             "category_id": category_id,
             "supplier_id": supplier_id,
-            "stock_quantity": stock_quantity,
+            "stock_quantity": 0,
             "reorder_threshold": reorder_threshold,
         },
         headers=admin_headers,
     )
     assert resp.status_code == 201, resp.text
-    return resp.json()["medicine_id"]
+    medicine_id = resp.json()["medicine_id"]
+
+    if stock_quantity > 0:
+        # Orders/sales now draw from batches (FEFO), not the raw counter -
+        # receiving a batch here also bumps stock_quantity by the same
+        # amount, so existing assertions against it still hold.
+        resp = await client.post(
+            "/batches",
+            json={
+                "medicine_id": medicine_id,
+                "supplier_id": supplier_id,
+                "quantity": stock_quantity,
+                "expiry_date": "2099-12-31",
+            },
+            headers=admin_headers,
+        )
+        assert resp.status_code == 201, resp.text
+
+    return medicine_id
 
 
 async def test_analytics_requires_admin(

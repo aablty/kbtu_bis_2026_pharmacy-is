@@ -1,13 +1,23 @@
-import { CreditCardIcon, FileTextIcon, PackageIcon } from "lucide-react";
+import {
+  CreditCardIcon,
+  FileTextIcon,
+  PackageIcon,
+  PackagePlusIcon,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useSessionStore } from "@/shared/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { AppShell } from "@/widgets/layout";
 import { OrdersPanel } from "./orders-panel";
 import { PosPanel } from "./pos-panel";
 import { PrescriptionsPanel } from "./prescriptions-panel";
+import { StockPanel } from "./stock-panel";
 
 export function StaffPage() {
   const { t } = useTranslation();
+  const role = useSessionStore((state) => state.user?.role);
+  // Receiving stock is admin/pharmacist on the server; cashiers don't get the tab.
+  const canReceiveStock = role === "admin" || role === "pharmacist";
 
   return (
     <AppShell>
@@ -41,6 +51,16 @@ export function StaffPage() {
               <CreditCardIcon />
               {t("staff.tabs.pos")}
             </TabsTrigger>
+            {canReceiveStock ? (
+              <TabsTrigger
+                value="stock"
+                aria-label={t("staff.tabs.stock")}
+                title={t("staff.tabs.stock")}
+              >
+                <PackagePlusIcon />
+                {t("staff.tabs.stock")}
+              </TabsTrigger>
+            ) : null}
           </TabsList>
         </div>
         <TabsContent value="orders" className="mt-4">
@@ -52,6 +72,11 @@ export function StaffPage() {
         <TabsContent value="pos" className="mt-4">
           <PosPanel />
         </TabsContent>
+        {canReceiveStock ? (
+          <TabsContent value="stock" className="mt-4">
+            <StockPanel />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </AppShell>
   );

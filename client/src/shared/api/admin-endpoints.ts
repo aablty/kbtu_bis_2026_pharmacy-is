@@ -1,4 +1,6 @@
 import type {
+  Batch,
+  BatchInput,
   CategoryInput,
   MedicineInput,
   Supplier,
@@ -30,5 +32,10 @@ export const adminEndpoints = {
     update: (id: number, body: MedicineInput) =>
       apiClient.put<Medicine>(`/medicines/${id}`, body).then((r) => r.data),
     remove: (id: number) => apiClient.delete(`/medicines/${id}`),
+  },
+  // Create is admin/pharmacist on the server.
+  batches: {
+    create: (body: BatchInput) =>
+      apiClient.post<Batch>("/batches", body).then((r) => r.data),
   },
 };

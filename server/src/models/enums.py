@@ -49,6 +49,7 @@ class NotificationType(StrEnum):
     LOW_STOCK = "low_stock"
     ORDER_STATUS = "order_status"
     PRESCRIPTION_STATUS = "prescription_status"
+    BATCH_EXPIRING = "batch_expiring"
 
 
 class DosageForm(StrEnum):

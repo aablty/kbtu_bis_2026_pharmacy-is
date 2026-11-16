@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import (
     IdempotencyKeyConflictError,
-    InsufficientStockError,
     InvalidOrderStatusTransitionError,
     MedicineNotFoundError,
     OrderNotFoundError,
@@ -27,12 +26,14 @@ from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
+from src.repositories.batch_repository import BatchRepository
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
 from src.repositories.payment_repository import PaymentRepository
 from src.repositories.prescription_repository import PrescriptionRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.orders import OrderCreate
+from src.services.batch_service import BatchService
 from src.services.notification_service import NotificationService
 from src.services.otp_service import OtpService
 from src.services.sale_service import SaleService
@@ -58,6 +59,8 @@ class OrderService:
         self._session = session
         self._orders = OrderRepository(session)
         self._medicines = MedicineRepository(session)
+        self._batches = BatchRepository(session)
+        self._batch_service = BatchService(session)
         self._payments = PaymentRepository(session)
         self._prescriptions = PrescriptionRepository(session)
         self._users = UserRepository(session)
@@ -137,19 +140,24 @@ class OrderService:
         )
 
         for medicine, item in zip(medicines, data.items, strict=True):
-            if not await self._medicines.decrement_stock(
-                medicine.medicine_id, item.quantity
-            ):
-                raise InsufficientStockError(medicine.medicine_id)
-            self._orders.add_item(
-                OrderItem(
-                    order_id=order.order_id,
-                    medicine_id=medicine.medicine_id,
-                    quantity=item.quantity,
-                    unit_price=medicine.price,
-                    medicine_name=medicine.name,
-                )
+            allocations = await self._batch_service.deduct_fefo_atomic(
+                medicine, item.quantity
             )
+            order_item = OrderItem(
+                order_id=order.order_id,
+                medicine_id=medicine.medicine_id,
+                quantity=item.quantity,
+                unit_price=medicine.price,
+                medicine_name=medicine.name,
+            )
+            self._orders.add_item(order_item)
+            await (
+                self._session.flush()
+            )  # need order_item.order_item_id for the ledger rows below
+            for batch_id, taken in allocations:
+                self._batches.record_allocation(
+                    order_item.order_item_id, batch_id, taken
+                )
             await self._notifications.notify_staff_low_stock(medicine)
 
         # Payment is simulated - no real gateway, so it always succeeds instantly
@@ -249,7 +257,16 @@ class OrderService:
 
         if new_status == OrderStatus.CANCELLED:
             for item in await self._orders.get_items(order_id):
-                await self._medicines.increment_stock(item.medicine_id, item.quantity)
+                allocations = await self._batches.get_allocations_for_order_item(
+                    item.order_item_id
+                )
+                for allocation in allocations:
+                    await self._batches.increment(
+                        allocation.batch_id, allocation.quantity
+                    )
+                await self._medicines.adjust_stock_quantity(
+                    item.medicine_id, item.quantity
+                )
 
             # Payment is simulated, so there's no real gateway refund to call -
             # but the record should still reflect that the money isn't owed

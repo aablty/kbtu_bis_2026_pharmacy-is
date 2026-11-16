@@ -16,6 +16,7 @@ from src.core.scheduler import build_scheduler
 from src.routers import (
     analytics,
     auth,
+    batches,
     categories,
     medicines,
     notifications,
@@ -68,6 +69,7 @@ app.include_router(sales.router)
 app.include_router(prescriptions.router)
 app.include_router(notifications.router)
 app.include_router(analytics.router)
+app.include_router(batches.router)
 
 
 @app.get("/health")
