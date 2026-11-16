@@ -16,7 +16,9 @@ SupplierServiceDep = Annotated[SupplierService, Depends(get_supplier_service)]
 @router.get(
     "",
     response_model=list[SupplierResponse],
-    dependencies=[Depends(require_role(UserRole.ADMIN))],
+    # PHARMACIST needs this to populate the supplier picker when receiving
+    # stock batches (POST /batches is ADMIN/PHARMACIST) - same tier as that.
+    dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.PHARMACIST))],
 )
 async def list_suppliers(service: SupplierServiceDep) -> list[SupplierResponse]:
     suppliers = await service.list_all()
@@ -39,7 +41,7 @@ async def create_supplier(
 @router.get(
     "/{supplier_id}",
     response_model=SupplierResponse,
-    dependencies=[Depends(require_role(UserRole.ADMIN))],
+    dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.PHARMACIST))],
 )
 async def get_supplier(
     supplier_id: int, service: SupplierServiceDep

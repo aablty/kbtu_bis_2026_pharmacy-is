@@ -254,12 +254,14 @@ async def test_search_unknown_category_returns_404(client: AsyncClient) -> None:
     assert resp.status_code == 404
 
 
-async def test_supplier_reads_require_admin(
+async def test_supplier_reads_require_admin_or_pharmacist(
     client: AsyncClient, make_user_with_token: MakeUserWithToken
 ) -> None:
     """Unlike CATEGORIES/MEDICINES, SUPPLIERS has no public read endpoint -
     contact info is internal business data, not customer-facing catalog
-    content. Deliberate, not an oversight - see .agents/plan/CLAUDE.md."""
+    content. Deliberate, not an oversight - see .agents/plan/CLAUDE.md.
+    PHARMACIST can read (not write) - it needs the supplier list to receive
+    stock batches (POST /batches is ADMIN/PHARMACIST too)."""
     _, admin_token = await make_user_with_token(UserRole.ADMIN)
     supplier_id = await _create_supplier(client, auth_headers(admin_token))
 
@@ -271,6 +273,18 @@ async def test_supplier_reads_require_admin(
 
     _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
     resp = await client.get("/suppliers", headers=auth_headers(customer_token))
+    assert resp.status_code == 403
+
+    _, pharmacist_token = await make_user_with_token(UserRole.PHARMACIST)
+    resp = await client.get("/suppliers", headers=auth_headers(pharmacist_token))
+    assert resp.status_code == 200
+    resp = await client.get(
+        f"/suppliers/{supplier_id}", headers=auth_headers(pharmacist_token)
+    )
+    assert resp.status_code == 200
+    resp = await client.post(
+        "/suppliers", json={"name": "X"}, headers=auth_headers(pharmacist_token)
+    )
     assert resp.status_code == 403
 
 
