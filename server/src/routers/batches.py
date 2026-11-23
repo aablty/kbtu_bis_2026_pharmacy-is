@@ -18,6 +18,7 @@ from src.schemas.batches import (
     BatchWriteOffCreate,
     BatchWriteOffResponse,
     ReceivingActivityResponse,
+    WriteOffActivityResponse,
 )
 from src.services.batch_service import BatchService
 
@@ -94,6 +95,34 @@ async def list_receiving_activity(
             received_by_name=name,
         )
         for batch, name, medicine_name in rows
+    ]
+
+
+@router.get(
+    "/write-offs",
+    response_model=list[WriteOffActivityResponse],
+    dependencies=[Depends(require_role(UserRole.ADMIN))],
+)
+async def list_write_offs(
+    service: BatchServiceDep,
+    days: Annotated[int | None, Query(ge=1, le=3650)] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[WriteOffActivityResponse]:
+    rows = await service.list_write_offs(days, limit)
+    return [
+        WriteOffActivityResponse(
+            id=write_off.id,
+            batch_id=batch.batch_id,
+            barcode=batch.barcode,
+            medicine_id=batch.medicine_id,
+            medicine_name=medicine_name,
+            quantity=write_off.quantity,
+            reason=write_off.reason,
+            written_off_by=write_off.written_off_by,
+            written_off_by_name=written_off_by_name,
+            written_off_at=write_off.written_off_at,
+        )
+        for write_off, batch, medicine_name, written_off_by_name in rows
     ]
 
 

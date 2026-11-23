@@ -150,6 +150,52 @@ async def test_write_off_reduces_remaining_and_rejects_over_remaining(
     assert resp.status_code == 422
 
 
+async def test_write_offs_activity_is_admin_only_and_lists_entries(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    medicine_id, supplier_id = await _setup_medicine_and_supplier(
+        client, auth_headers(admin_token)
+    )
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 10,
+            "expiry_date": "2099-12-31",
+        },
+        headers=auth_headers(admin_token),
+    )
+    batch_id = resp.json()["batch_id"]
+    barcode = resp.json()["barcode"]
+
+    resp = await client.post(
+        f"/batches/{batch_id}/write-off",
+        json={"quantity": 3, "reason": "expired"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 201, resp.text
+    write_off_id = resp.json()["id"]
+
+    for role in (UserRole.PHARMACIST, UserRole.CASHIER, UserRole.CUSTOMER):
+        _, token = await make_user_with_token(role)
+        resp = await client.get("/batches/write-offs", headers=auth_headers(token))
+        assert resp.status_code == 403
+
+    resp = await client.get("/batches/write-offs", headers=auth_headers(admin_token))
+    assert resp.status_code == 200
+    rows = {row["id"]: row for row in resp.json()}
+    assert write_off_id in rows
+    entry = rows[write_off_id]
+    assert entry["batch_id"] == batch_id
+    assert entry["barcode"] == barcode
+    assert entry["medicine_id"] == medicine_id
+    assert entry["quantity"] == 3
+    assert entry["reason"] == "expired"
+    assert entry["written_off_by_name"] is not None
+
+
 async def test_write_off_requires_admin_or_pharmacist(
     client: AsyncClient, make_user_with_token: MakeUserWithToken
 ) -> None:

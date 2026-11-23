@@ -568,6 +568,19 @@ export interface WastageReport {
   total_value: string;
 }
 
+export interface WriteOffActivityResponse {
+  id: number;
+  batch_id: number;
+  barcode: string | null;
+  medicine_id: number;
+  medicine_name: string;
+  quantity: number;
+  reason: string | null;
+  written_off_by: number;
+  written_off_by_name: string | null;
+  written_off_at: string;
+}
+
 export type SearchMedicinesMedicinesGetParams = {
   /** Match against name or manufacturer */
   q?: string | null;
@@ -632,6 +645,15 @@ export type WastageAnalyticsWastageGetParams = {
 
 export type ListReceivingActivityBatchesReceivingActivityGetParams = {
   received_by?: number | null;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+};
+
+export type ListWriteOffsBatchesWriteOffsGetParams = {
+  days?: number | null;
   /**
    * @minimum 1
    * @maximum 200
@@ -6358,6 +6380,169 @@ export function useListReceivingActivityBatchesReceivingActivityGet<
       params,
       options,
     );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+/**
+ * @summary List Write Offs
+ */
+export const listWriteOffsBatchesWriteOffsGet = (
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+  signal?: AbortSignal,
+) => {
+  return apiMutator<WriteOffActivityResponse[]>({
+    url: `/batches/write-offs`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getListWriteOffsBatchesWriteOffsGetQueryKey = (
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+) => {
+  return [`/batches/write-offs`, ...(params ? [params] : [])] as const;
+};
+
+export const getListWriteOffsBatchesWriteOffsGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListWriteOffsBatchesWriteOffsGetQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>
+  > = ({ signal }) => listWriteOffsBatchesWriteOffsGet(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListWriteOffsBatchesWriteOffsGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>
+>;
+export type ListWriteOffsBatchesWriteOffsGetQueryError = HTTPValidationError;
+
+export function useListWriteOffsBatchesWriteOffsGet<
+  TData = Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+  TError = HTTPValidationError,
+>(
+  params: undefined | ListWriteOffsBatchesWriteOffsGetParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListWriteOffsBatchesWriteOffsGet<
+  TData = Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListWriteOffsBatchesWriteOffsGet<
+  TData = Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List Write Offs
+ */
+
+export function useListWriteOffsBatchesWriteOffsGet<
+  TData = Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListWriteOffsBatchesWriteOffsGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listWriteOffsBatchesWriteOffsGet>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getListWriteOffsBatchesWriteOffsGetQueryOptions(
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

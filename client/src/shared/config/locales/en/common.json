@@ -333,7 +333,7 @@
       "pickupCode": "Pickup code",
       "confirmPickup": "Complete order",
       "completingPickup": "Completing…",
-      "viewDetails": "View details",
+      "viewDetails": "View order #{{id}} details",
       "customer": "Customer",
       "customerId": "Customer #{{id}}"
     },
@@ -345,7 +345,8 @@
       "reject": "Reject",
       "rejecting": "Rejecting…",
       "rejectTitle": "Reject prescription",
-      "reason": "Reason for rejection"
+      "reason": "Reason for rejection",
+      "viewDetails": "View prescription details for {{customer}}"
     },
     "pos": {
       "step1": "1 · Find medicines",
@@ -427,8 +428,17 @@
       "totalQuantity": "Total units written off",
       "totalValue": "Total value lost",
       "empty": "No wastage in this period.",
+      "noMatches": "No medicines match your search.",
+      "searchPlaceholder": "Search by medicine name…",
       "quantity": "Quantity",
-      "value": "Value"
+      "value": "Value",
+      "summaryTab": "Summary",
+      "logTab": "Write-off log",
+      "logEmpty": "No write-offs in this period.",
+      "batchBarcode": "Batch barcode",
+      "reason": "Reason",
+      "writtenOffBy": "Written off by",
+      "writtenOffAt": "Written off at"
     },
     "receiving": {
       "empty": "No receiving activity yet.",
@@ -439,6 +449,8 @@
     },
     "add": "Add",
     "addChild": "Add subcategory",
+    "viewDetails": "View details",
+    "viewDetailsFor": "View details for {{name}}",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",

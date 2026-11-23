@@ -175,6 +175,25 @@ class BatchRepository:
         await self._session.flush()
         return write_off
 
+    async def list_write_offs(
+        self, since: datetime | None, limit: int
+    ) -> list[tuple[BatchWriteOff, StockBatch, str, str | None]]:
+        stmt = (
+            select(BatchWriteOff, StockBatch, Medicine.name, User.full_name, User.email)
+            .join(StockBatch, StockBatch.batch_id == BatchWriteOff.batch_id)
+            .join(Medicine, Medicine.medicine_id == StockBatch.medicine_id)
+            .outerjoin(User, User.user_id == BatchWriteOff.written_off_by)
+            .order_by(BatchWriteOff.written_off_at.desc())
+            .limit(limit)
+        )
+        if since is not None:
+            stmt = stmt.where(BatchWriteOff.written_off_at >= since)
+        result = await self._session.execute(stmt)
+        return [
+            (write_off, batch, medicine_name, full_name or email)
+            for write_off, batch, medicine_name, full_name, email in result
+        ]
+
     async def get_allocations_for_order_items(
         self, order_item_ids: list[int]
     ) -> list[tuple[int, OrderItemBatch, StockBatch, Supplier]]:

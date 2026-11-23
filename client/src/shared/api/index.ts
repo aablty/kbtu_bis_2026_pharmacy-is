@@ -31,6 +31,7 @@ export type {
   BatchWriteOffResponse,
   WastageItemResponse,
   WastageReport,
+  WriteOffActivityResponse,
 } from "./generated";
 // Orval-generated client (client/orval.config.ts) - the only source for
 // phase 1's new batch/wastage endpoints, not yet mirrored in the
@@ -39,6 +40,7 @@ export {
   getByBarcodeBatchesByBarcodeBarcodeGet,
   getSaleSalesSaleIdGet,
   useListReceivingActivityBatchesReceivingActivityGet,
+  useListWriteOffsBatchesWriteOffsGet,
   useWastageAnalyticsWastageGet,
   useWriteOffBatchBatchesBatchIdWriteOffPost,
 } from "./generated";

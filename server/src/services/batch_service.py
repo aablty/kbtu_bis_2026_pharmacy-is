@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,6 +48,12 @@ class BatchService:
         self, received_by: int | None, limit: int
     ) -> list[tuple[StockBatch, str | None, str]]:
         return await self._batches.list_recent(received_by, limit)
+
+    async def list_write_offs(
+        self, days: int | None, limit: int
+    ) -> list[tuple[BatchWriteOff, StockBatch, str, str | None]]:
+        since = datetime.now(UTC) - timedelta(days=days) if days is not None else None
+        return await self._batches.list_write_offs(since, limit)
 
     async def write_off(
         self, batch_id: int, quantity: int, reason: str | None, written_off_by: int

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  type ColumnDef,
   createColumnHelper,
   createSortedRowModel,
   type Header,
@@ -9,6 +10,7 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { isAxiosError } from "axios";
+import { cn } from "cn";
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
@@ -43,6 +45,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { ListEmpty } from "@/shared/ui/list-empty";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { Sheet, SheetContent, SheetFooter } from "@/shared/ui/sheet";
 import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
   Table,
@@ -92,6 +95,14 @@ export interface CrudPanelProps<T extends RowData> {
   footer?: ReactNode;
   /** Replaces the default table (desktop)/card (mobile) list, e.g. for a tree view. */
   body?: (ctx: CrudBodyContext<T>) => ReactNode;
+  /**
+   * Renders a detail sheet's content for a row/card, opened by clicking the
+   * row (desktop) or card (mobile). Edit/delete stay as explicit action
+   * buttons so clicking them doesn't also open the sheet.
+   */
+  detail?: (item: T) => ReactNode;
+  /** Per-item aria-label for the detail row/card (falls back to a generic label when omitted). */
+  detailLabel?: (item: T) => string;
 }
 
 const EMPTY_VALUES = (fields: FieldDef[]): Values =>
@@ -160,6 +171,8 @@ export function CrudPanel<T extends RowData>({
   toolbar,
   footer,
   body,
+  detail,
+  detailLabel,
 }: CrudPanelProps<T>) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -169,6 +182,7 @@ export function CrudPanel<T extends RowData>({
   } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<T | null>(null);
+  const [viewing, setViewing] = useState<T | null>(null);
 
   const columnHelper = useMemo(
     () => createColumnHelper<typeof sortingFeatures, T>(),
@@ -177,20 +191,21 @@ export function CrudPanel<T extends RowData>({
   const tableColumns = useMemo(
     () =>
       columns.map((c, i) =>
-        columnHelper.display({
-          id: `col-${i}`,
-          header: c.header,
-          enableSorting: !!c.sortValue,
-          sortFn: c.sortValue
-            ? (rowA, rowB) => {
+        // A sortable column needs an accessorFn - TanStack Table only ever
+        // considers accessor columns sortable, never display columns.
+        c.sortValue
+          ? columnHelper.accessor(c.sortValue, {
+              id: `col-${i}`,
+              header: c.header,
+              sortFn: (rowA, rowB) => {
                 const a = c.sortValue?.(rowA.original);
                 const b = c.sortValue?.(rowB.original);
                 if (a === undefined || b === undefined) return 0;
                 return a < b ? -1 : a > b ? 1 : 0;
-              }
-            : undefined,
-        }),
-      ),
+              },
+            })
+          : columnHelper.display({ id: `col-${i}`, header: c.header }),
+      ) as ColumnDef<typeof sortingFeatures, T>[],
     [columns, columnHelper],
   );
   const table = useTable({
@@ -256,7 +271,10 @@ export function CrudPanel<T extends RowData>({
           size="icon-sm"
           aria-label={t("admin.edit")}
           title={t("admin.edit")}
-          onClick={() => open(item)}
+          onClick={() => {
+            setViewing(null);
+            open(item);
+          }}
         >
           <PencilIcon />
         </Button>
@@ -266,7 +284,10 @@ export function CrudPanel<T extends RowData>({
           aria-label={t("admin.delete")}
           title={t("admin.delete")}
           disabled={removeMutation.isPending}
-          onClick={() => setDeleting(item)}
+          onClick={() => {
+            setViewing(null);
+            setDeleting(item);
+          }}
         >
           <Trash2Icon />
         </Button>
@@ -328,12 +349,38 @@ export function CrudPanel<T extends RowData>({
                   {rows.map((row) => {
                     const item = row.original;
                     return (
-                      <TableRow key={idOf(item)}>
+                      <TableRow
+                        key={idOf(item)}
+                        className={detail ? "cursor-pointer" : undefined}
+                        tabIndex={detail ? 0 : undefined}
+                        role={detail ? "button" : undefined}
+                        aria-label={
+                          detail
+                            ? (detailLabel?.(item) ?? t("admin.viewDetails"))
+                            : undefined
+                        }
+                        onClick={detail ? () => setViewing(item) : undefined}
+                        onKeyDown={
+                          detail
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setViewing(item);
+                                }
+                              }
+                            : undefined
+                        }
+                      >
                         {columns.map((c) => (
                           <TableCell key={c.header}>{c.cell(item)}</TableCell>
                         ))}
                         <TableCell>
-                          <div className="flex justify-end gap-1">
+                          {/* biome-ignore lint/a11y/noStaticElementInteractions: stops the edit/delete buttons' clicks from bubbling to the row's own onClick, which opens the detail sheet */}
+                          <div
+                            className="flex justify-end gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
                             {actions(item)}
                           </div>
                         </TableCell>
@@ -350,7 +397,28 @@ export function CrudPanel<T extends RowData>({
                 return (
                   <li
                     key={idOf(item)}
-                    className="flex flex-col gap-3 rounded-2xl border p-4"
+                    className={cn(
+                      "flex flex-col gap-3 rounded-2xl border p-4",
+                      detail && "cursor-pointer",
+                    )}
+                    tabIndex={detail ? 0 : undefined}
+                    role={detail ? "button" : undefined}
+                    aria-label={
+                      detail
+                        ? (detailLabel?.(item) ?? t("admin.viewDetails"))
+                        : undefined
+                    }
+                    onClick={detail ? () => setViewing(item) : undefined}
+                    onKeyDown={
+                      detail
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setViewing(item);
+                            }
+                          }
+                        : undefined
+                    }
                   >
                     <p className="text-sm font-medium break-words">
                       {columns[0]?.cell(item)}
@@ -368,7 +436,12 @@ export function CrudPanel<T extends RowData>({
                         </div>
                       ))}
                     </dl>
-                    <div className="flex justify-end gap-1 border-t pt-3">
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: stops the edit/delete buttons' clicks from bubbling to the card's own onClick, which opens the detail sheet */}
+                    <div
+                      className="flex justify-end gap-1 border-t pt-3"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       {actions(item)}
                     </div>
                   </li>
@@ -503,6 +576,26 @@ export function CrudPanel<T extends RowData>({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {detail ? (
+        <Sheet
+          open={viewing !== null}
+          onOpenChange={(open) => !open && setViewing(null)}
+        >
+          <SheetContent className="w-full sm:max-w-xl">
+            {viewing ? (
+              <>
+                <div className="flex flex-col gap-4 overflow-y-auto">
+                  {detail(viewing)}
+                </div>
+                <SheetFooter className="flex-row flex-wrap gap-2">
+                  {actions(viewing)}
+                </SheetFooter>
+              </>
+            ) : null}
+          </SheetContent>
+        </Sheet>
+      ) : null}
     </div>
   );
 }

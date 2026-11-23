@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { cn } from "cn";
 import {
   BarChart3Icon,
   ChevronLeftIcon,
@@ -7,18 +8,20 @@ import {
   ClipboardListIcon,
   FolderTreeIcon,
   MinusCircleIcon,
+  PackageIcon,
   PillIcon,
   PlusIcon,
   SearchIcon,
   Trash2Icon,
   TruckIcon,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   buildCategoryTree,
   type CategoryNode,
   categoryLabel,
+  dosageFormLabel,
   formatPrice,
 } from "@/features/browse-catalog";
 import {
@@ -36,6 +39,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { AppShell } from "@/widgets/layout";
@@ -237,57 +241,101 @@ function SuppliersTab() {
 }
 
 /** Recursive, editable rendering of the category tree (admin only - the
- * customer-facing CategoryTreeNav is a read-only nav, not an edit surface). */
+ * customer-facing CategoryTreeNav is a read-only nav, not an edit surface).
+ * Top-level categories start expanded (the admin scans those first);
+ * deeper levels start collapsed to keep a large tree scannable. */
 function CategoryTree({
   nodes,
-  depth = 0,
   renderActions,
   onAddChild,
 }: {
   nodes: CategoryNode[];
-  depth?: number;
   renderActions: (node: Category) => ReactNode;
   onAddChild: (parentId: number) => void;
 }) {
   const { t, i18n } = useTranslation();
-  if (nodes.length === 0) return null;
-  return (
-    <ul
-      className={
-        depth > 0
-          ? "ml-5 flex flex-col gap-1.5 border-l pl-3"
-          : "flex flex-col gap-1.5"
-      }
-    >
-      {nodes.map((node) => (
-        <li key={node.category_id} className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2 rounded-xl border p-2.5">
-            <span className="min-w-0 truncate text-sm font-medium">
-              {categoryLabel(node, i18n.language)}
-            </span>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("admin.addChild")}
-                title={t("admin.addChild")}
-                onClick={() => onAddChild(node.category_id)}
-              >
-                <PlusIcon />
-              </Button>
-              {renderActions(node)}
-            </div>
-          </div>
-          <CategoryTree
-            nodes={node.children}
-            depth={depth + 1}
-            renderActions={renderActions}
-            onAddChild={onAddChild}
-          />
-        </li>
-      ))}
-    </ul>
-  );
+  const [expanded, setExpanded] = useState<Set<number>>(() => new Set());
+  // nodes is [] on first render while the query loads, so the lazy
+  // useState initializer above can't see the real top-level ids. Seed them
+  // in once, the first time nodes becomes non-empty - guarded so it never
+  // re-fires (and stomps a user's manual collapse) on later refetches.
+  const seeded = useRef(false);
+  if (!seeded.current && nodes.length > 0) {
+    seeded.current = true;
+    setExpanded(new Set(nodes.map((n) => n.category_id)));
+  }
+
+  function toggle(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  function branch(level: CategoryNode[], depth: number) {
+    if (level.length === 0) return null;
+    return (
+      <ul
+        className={
+          depth > 0
+            ? "ml-5 flex flex-col gap-1.5 border-l pl-3"
+            : "flex flex-col gap-1.5"
+        }
+      >
+        {level.map((node) => {
+          const hasChildren = node.children.length > 0;
+          const open = expanded.has(node.category_id);
+          return (
+            <li key={node.category_id} className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2 rounded-xl border p-2.5">
+                <div className="flex min-w-0 items-center gap-1">
+                  {hasChildren ? (
+                    <button
+                      type="button"
+                      onClick={() => toggle(node.category_id)}
+                      aria-expanded={open}
+                      aria-label={t(
+                        open ? "catalog.collapse" : "catalog.expand",
+                      )}
+                      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      <ChevronRightIcon
+                        className={cn(
+                          "size-4 transition-transform",
+                          open && "rotate-90",
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <span className="size-7 shrink-0" />
+                  )}
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {categoryLabel(node, i18n.language)}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("admin.addChild")}
+                    title={t("admin.addChild")}
+                    onClick={() => onAddChild(node.category_id)}
+                  >
+                    <PlusIcon />
+                  </Button>
+                  {renderActions(node)}
+                </div>
+              </div>
+              {open && hasChildren ? branch(node.children, depth + 1) : null}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return branch(nodes, 0);
 }
 
 function CategoriesTab() {
@@ -450,15 +498,32 @@ function MedicinesTab() {
           // rows with long names taller than the rest - truncation keeps a
           // uniform row height across the table.
           cell: (m) => (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focusable on purpose, so the tooltip with the full name reaches keyboard users too */}
-                <span tabIndex={0} className="block max-w-48 truncate">
-                  {m.name}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{m.name}</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white">
+                {m.image_urls[0] ? (
+                  <img
+                    src={m.image_urls[0]}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="size-full object-contain"
+                  />
+                ) : (
+                  <PackageIcon
+                    aria-label={t("catalog.noImage")}
+                    className="size-5 text-muted-foreground/40"
+                  />
+                )}
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focusable on purpose, so the tooltip with the full name reaches keyboard users too */}
+                  <span tabIndex={0} className="block max-w-40 truncate">
+                    {m.name}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{m.name}</TooltipContent>
+              </Tooltip>
+            </div>
           ),
           sortValue: (m) => m.name.toLowerCase(),
         },
@@ -496,6 +561,81 @@ function MedicinesTab() {
             ),
         },
       ]}
+      detailLabel={(m) => t("admin.viewDetailsFor", { name: m.name })}
+      detail={(m) => (
+        <>
+          <SheetHeader>
+            <SheetTitle>{m.name}</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-4 px-6">
+            <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border bg-white sm:aspect-[4/3]">
+              {m.image_urls[0] ? (
+                <img
+                  src={m.image_urls[0]}
+                  alt={m.name}
+                  referrerPolicy="no-referrer"
+                  className="size-full object-contain"
+                />
+              ) : (
+                <PackageIcon
+                  aria-label={t("catalog.noImage")}
+                  className="size-16 text-muted-foreground/40"
+                />
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={m.stock_quantity > 0 ? "secondary" : "outline"}>
+                {m.stock_quantity > 0
+                  ? t("catalog.inStock")
+                  : t("catalog.outOfStock")}
+              </Badge>
+              {m.requires_prescription ? (
+                <Badge variant="outline" className="gap-1">
+                  <ClipboardCheckIcon className="size-3" />
+                  {t("catalog.requiresPrescription")}
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <MinusCircleIcon className="size-3" />
+                  {t("medicine.noPrescription")}
+                </Badge>
+              )}
+            </div>
+
+            <p className="text-2xl font-semibold tabular-nums">
+              {formatPrice(m.price, i18n.language)}
+            </p>
+
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t pt-4 text-sm">
+              <dt className="text-muted-foreground">
+                {t("admin.fields.manufacturer")}
+              </dt>
+              <dd>{m.manufacturer ?? "—"}</dd>
+              <dt className="text-muted-foreground">
+                {t("admin.fields.dosage_form")}
+              </dt>
+              <dd>{dosageFormLabel(m.dosage_form, t)}</dd>
+              <dt className="text-muted-foreground">
+                {t("admin.fields.stock_quantity")}
+              </dt>
+              <dd>{m.stock_quantity}</dd>
+              <dt className="text-muted-foreground">
+                {t("admin.fields.reorder_threshold")}
+              </dt>
+              <dd>{m.reorder_threshold}</dd>
+              <dt className="text-muted-foreground">
+                {t("admin.fields.category")}
+              </dt>
+              <dd>{categoryName(m.category_id)}</dd>
+              <dt className="text-muted-foreground">
+                {t("admin.fields.supplier")}
+              </dt>
+              <dd>{supplierName(m.supplier_id)}</dd>
+            </dl>
+          </div>
+        </>
+      )}
       fields={fields}
       toValues={(m): Values => ({
         name: m.name,

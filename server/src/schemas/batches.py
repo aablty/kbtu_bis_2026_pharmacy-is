@@ -70,3 +70,18 @@ class BatchWriteOffResponse(BaseModel):
     written_off_by: int
     written_off_at: datetime
     model_config = {"from_attributes": True}
+
+
+class WriteOffActivityResponse(BaseModel):
+    id: int
+    batch_id: int
+    barcode: str | None
+    medicine_id: int
+    medicine_name: str
+    quantity: int
+    reason: str | None
+    written_off_by: int
+    written_off_by_name: str | None
+    written_off_at: datetime
+
+    model_config = {"from_attributes": True}

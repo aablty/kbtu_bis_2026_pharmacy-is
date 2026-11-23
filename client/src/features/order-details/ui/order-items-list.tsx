@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { formatPrice } from "@/features/browse-catalog";
 import type { OrderItem } from "@/shared/api";
 import { QrCode } from "@/shared/ui/qr-code";
@@ -17,7 +18,13 @@ export function OrderItemsList({ items }: { items: OrderItem[] }) {
         >
           <div className="flex justify-between gap-4">
             <span className="min-w-0">
-              {item.medicine_name}
+              <Link
+                to={`/catalog/${item.medicine_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="underline-offset-2 hover:underline"
+              >
+                {item.medicine_name}
+              </Link>
               <span className="text-muted-foreground"> × {item.quantity}</span>
             </span>
             <span className="shrink-0 tabular-nums">

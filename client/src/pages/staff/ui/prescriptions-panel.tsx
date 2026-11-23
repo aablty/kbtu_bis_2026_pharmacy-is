@@ -1,11 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CheckIcon,
-  ExternalLinkIcon,
-  EyeIcon,
-  FileTextIcon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, ExternalLinkIcon, FileTextIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -47,6 +41,35 @@ const BADGE: Record<
   approved: "secondary",
   rejected: "destructive",
 };
+
+// Shared between the desktop table and the mobile cards. `withEmail=false`
+// drops the mailto link so this can be nested inside a <button> (the mobile
+// card's click target) without putting interactive content inside interactive content.
+function CustomerInfo({
+  prescription: p,
+  withEmail = true,
+}: {
+  prescription: Prescription;
+  withEmail?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col">
+      <span className="text-foreground">
+        {p.customer_name ?? t("staff.orders.customerId", { id: p.customer_id })}
+      </span>
+      {withEmail && p.customer_email ? (
+        <a
+          href={`mailto:${p.customer_email}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs text-primary underline underline-offset-2"
+        >
+          {p.customer_email}
+        </a>
+      ) : null}
+    </div>
+  );
+}
 
 export function PrescriptionsPanel() {
   const { t, i18n } = useTranslation();
@@ -230,12 +253,27 @@ export function PrescriptionsPanel() {
               <TableRow
                 key={p.prescription_id}
                 className="cursor-pointer"
+                tabIndex={0}
+                role="button"
+                aria-label={t("staff.prescriptions.viewDetails", {
+                  customer:
+                    p.customer_name ??
+                    t("staff.orders.customerId", { id: p.customer_id }),
+                })}
                 onClick={() => setDetailId(p.prescription_id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailId(p.prescription_id);
+                  }
+                }}
               >
                 <TableCell className="font-medium">
                   {p.prescription_id}
                 </TableCell>
-                <TableCell className="tabular-nums">{p.customer_id}</TableCell>
+                <TableCell>
+                  <CustomerInfo prescription={p} />
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDateTime(p.created_at, i18n.language)}
                 </TableCell>
@@ -250,21 +288,7 @@ export function PrescriptionsPanel() {
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDetailId(p.prescription_id);
-                      }}
-                      aria-label={t("staff.orders.viewDetails")}
-                      title={t("staff.orders.viewDetails")}
-                    >
-                      <EyeIcon />
-                    </Button>
-                    {actions(p)}
-                  </div>
+                  <div className="flex justify-end gap-1">{actions(p)}</div>
                 </TableCell>
               </TableRow>
             ))}
@@ -278,37 +302,34 @@ export function PrescriptionsPanel() {
             key={p.prescription_id}
             className="flex flex-col gap-3 rounded-2xl border p-4"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium">#{p.prescription_id}</span>
-              <Badge variant={BADGE[p.status]}>
-                {t(`prescriptions.status.${p.status}`)}
-              </Badge>
-            </div>
-            <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
-              <span>
-                {t("staff.prescriptions.customer")}:{" "}
-                <span className="tabular-nums text-foreground">
-                  {p.customer_id}
-                </span>
-              </span>
-              <span>{formatDateTime(p.created_at, i18n.language)}</span>
-              {p.rejection_reason ? (
-                <span className="text-destructive">{p.rejection_reason}</span>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setDetailId(p.prescription_id)}
-                aria-label={t("staff.orders.viewDetails")}
-                title={t("staff.orders.viewDetails")}
+            <button
+              type="button"
+              className="flex flex-col gap-3 text-left"
+              onClick={() => setDetailId(p.prescription_id)}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">#{p.prescription_id}</span>
+                <Badge variant={BADGE[p.status]}>
+                  {t(`prescriptions.status.${p.status}`)}
+                </Badge>
+              </div>
+              <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                <CustomerInfo prescription={p} withEmail={false} />
+                <span>{formatDateTime(p.created_at, i18n.language)}</span>
+                {p.rejection_reason ? (
+                  <span className="text-destructive">{p.rejection_reason}</span>
+                ) : null}
+              </div>
+            </button>
+            {p.customer_email ? (
+              <a
+                href={`mailto:${p.customer_email}`}
+                className="-mt-2 text-xs text-primary underline underline-offset-2"
               >
-                <EyeIcon />
-                {t("staff.orders.viewDetails")}
-              </Button>
-              {actions(p)}
-            </div>
+                {p.customer_email}
+              </a>
+            ) : null}
+            <div className="flex flex-wrap gap-2">{actions(p)}</div>
           </li>
         ))}
       </ul>

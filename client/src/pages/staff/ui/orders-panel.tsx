@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckIcon, EyeIcon, PackageIcon, XIcon } from "lucide-react";
+import { CheckIcon, PackageIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/features/browse-catalog";
@@ -237,7 +237,18 @@ export function OrdersPanel() {
                   <TableRow
                     key={order.order_id}
                     className="cursor-pointer"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={t("staff.orders.viewDetails", {
+                      id: order.order_id,
+                    })}
                     onClick={() => setDetailId(order.order_id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setDetailId(order.order_id);
+                      }
+                    }}
                   >
                     <TableCell className="font-medium">
                       {order.order_id}
@@ -258,18 +269,6 @@ export function OrdersPanel() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDetailId(order.order_id);
-                          }}
-                          aria-label={t("staff.orders.viewDetails")}
-                          title={t("staff.orders.viewDetails")}
-                        >
-                          <EyeIcon />
-                        </Button>
                         {actions(order)}
                       </div>
                     </TableCell>
@@ -285,36 +284,32 @@ export function OrdersPanel() {
                 key={order.order_id}
                 className="flex flex-col gap-3 rounded-2xl border p-4"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
-                    #{order.order_id}
-                    {order.prescription_id ? (
-                      <span className="ml-2 text-xs text-amber-600">Rx</span>
-                    ) : null}
-                  </span>
-                  <Badge variant={BADGE[order.status]}>
-                    {t(`order.status.${order.status}`)}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-                  <span className="font-medium tabular-nums text-foreground">
-                    {formatPrice(order.total_amount, i18n.language)}
-                  </span>
-                  <span>{formatDateTime(order.created_at, i18n.language)}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setDetailId(order.order_id)}
-                    aria-label={t("staff.orders.viewDetails")}
-                    title={t("staff.orders.viewDetails")}
-                  >
-                    <EyeIcon />
-                    {t("staff.orders.viewDetails")}
-                  </Button>
-                  {actions(order)}
-                </div>
+                <button
+                  type="button"
+                  className="flex flex-col gap-3 text-left"
+                  onClick={() => setDetailId(order.order_id)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">
+                      #{order.order_id}
+                      {order.prescription_id ? (
+                        <span className="ml-2 text-xs text-amber-600">Rx</span>
+                      ) : null}
+                    </span>
+                    <Badge variant={BADGE[order.status]}>
+                      {t(`order.status.${order.status}`)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <span className="font-medium tabular-nums text-foreground">
+                      {formatPrice(order.total_amount, i18n.language)}
+                    </span>
+                    <span>
+                      {formatDateTime(order.created_at, i18n.language)}
+                    </span>
+                  </div>
+                </button>
+                <div className="flex flex-wrap gap-2">{actions(order)}</div>
               </li>
             ))}
           </ul>
