@@ -10,6 +10,10 @@ from src.models.enums import PrescriptionStatus
 class PrescriptionResponse(BaseModel):
     prescription_id: int
     customer_id: int
+    # Populated for staff views (reviewers need to know whose prescription
+    # this is) - never read from the ORM object directly, see the router.
+    customer_name: str | None = None
+    customer_email: str | None = None
     file_url: str
     status: PrescriptionStatus
     reviewed_by: int | None

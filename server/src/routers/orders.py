@@ -24,6 +24,7 @@ from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
 from src.models.stock_batch import OrderItemBatch, StockBatch
 from src.models.supplier import Supplier
+from src.models.user import User
 from src.routers.deps import CurrentUser, get_order_service, require_role
 from src.schemas.orders import (
     OrderCreate,
@@ -48,10 +49,13 @@ def _to_response(
     payment: Payment | None,
     history: list[OrderStatusHistory],
     item_batches: dict[int, list[tuple[OrderItemBatch, StockBatch, Supplier]]],
+    customer: User | None = None,
 ) -> OrderResponse:
     return OrderResponse(
         order_id=order.order_id,
         customer_id=order.customer_id,
+        customer_name=customer.full_name if customer else None,
+        customer_email=customer.email if customer else None,
         status=order.status,
         fulfillment_type=order.fulfillment_type,
         delivery_address=order.delivery_address,
@@ -136,7 +140,8 @@ async def place_order(
     item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order.order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history, item_batches)
+    customer = (await service.get_customers([order.customer_id])).get(order.customer_id)
+    return _to_response(order, items, payment, history, item_batches, customer)
 
 
 @router.get("", response_model=list[OrderResponse])
@@ -166,6 +171,9 @@ async def list_orders(
         item.order_item_id for items in items_by_order.values() for item in items
     ]
     item_batches = await service.get_item_batches(all_item_ids)
+    customers_by_id = await service.get_customers(
+        list({order.customer_id for order in orders})
+    )
 
     return [
         _to_response(
@@ -174,6 +182,7 @@ async def list_orders(
             payment_by_order.get(order.order_id),
             history_by_order[order.order_id],
             item_batches,
+            customers_by_id.get(order.customer_id),
         )
         for order in orders
     ]
@@ -196,7 +205,8 @@ async def get_order(
     item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history, item_batches)
+    customer = (await service.get_customers([order.customer_id])).get(order.customer_id)
+    return _to_response(order, items, payment, history, item_batches, customer)
 
 
 @router.patch(
@@ -238,4 +248,5 @@ async def update_order_status(
     item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history, item_batches)
+    customer = (await service.get_customers([order.customer_id])).get(order.customer_id)
+    return _to_response(order, items, payment, history, item_batches, customer)

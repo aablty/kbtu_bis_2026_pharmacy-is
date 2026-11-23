@@ -28,6 +28,7 @@ from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
 from src.models.stock_batch import OrderItemBatch, StockBatch
 from src.models.supplier import Supplier
+from src.models.user import User
 from src.repositories.batch_repository import BatchRepository
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
@@ -223,6 +224,12 @@ class OrderService:
 
     async def get_payments_for_orders(self, order_ids: list[int]) -> list[Payment]:
         return await self._payments.get_latest_for_orders(order_ids)
+
+    async def get_customers(self, customer_ids: list[int]) -> dict[int, User]:
+        """Batch lookup, keyed by user_id - staff views need the customer's
+        name/email alongside an order, and this is the one-query way to get
+        it for a whole list of orders instead of a lookup per row."""
+        return {u.user_id: u for u in await self._users.get_by_ids(customer_ids)}
 
     async def update_status(
         self,

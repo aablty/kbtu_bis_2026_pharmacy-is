@@ -11,7 +11,9 @@ from src.core.exceptions import (
 from src.core.file_storage import FileStorage
 from src.models.enums import NotificationType, PrescriptionStatus
 from src.models.prescription import Prescription
+from src.models.user import User
 from src.repositories.prescription_repository import PrescriptionRepository
+from src.repositories.user_repository import UserRepository
 from src.services.notification_service import NotificationService
 
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "application/pdf"}
@@ -29,8 +31,14 @@ class PrescriptionService:
     ) -> None:
         self._session = session
         self._repo = PrescriptionRepository(session)
+        self._users = UserRepository(session)
         self._storage = file_storage
         self._notifications = notification_service
+
+    async def get_customers(self, customer_ids: list[int]) -> dict[int, User]:
+        """Batch lookup, keyed by user_id - see OrderService.get_customers
+        for why this is batched rather than one lookup per prescription."""
+        return {u.user_id: u for u in await self._users.get_by_ids(customer_ids)}
 
     async def upload(
         self, customer_id: int, filename: str, content_type: str, content: bytes

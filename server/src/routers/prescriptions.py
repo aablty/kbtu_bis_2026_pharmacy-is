@@ -9,6 +9,8 @@ from src.core.exceptions import (
     PrescriptionNotFoundError,
 )
 from src.models.enums import UserRole
+from src.models.prescription import Prescription
+from src.models.user import User
 from src.routers.deps import CurrentUser, get_prescription_service, require_role
 from src.schemas.prescriptions import PrescriptionResponse, PrescriptionReviewRequest
 from src.services.prescription_service import MAX_FILE_SIZE_BYTES, PrescriptionService
@@ -20,6 +22,20 @@ PrescriptionServiceDep = Annotated[
 ]
 _REVIEWER_ROLES = (UserRole.ADMIN, UserRole.PHARMACIST)
 _STAFF_ROLES = (UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CASHIER)
+
+
+def _to_response(
+    prescription: Prescription, customer: User | None = None
+) -> PrescriptionResponse:
+    response = PrescriptionResponse.model_validate(prescription)
+    if customer is not None:
+        response = response.model_copy(
+            update={
+                "customer_name": customer.full_name,
+                "customer_email": customer.email,
+            }
+        )
+    return response
 
 
 @router.post(
@@ -51,7 +67,7 @@ async def upload_prescription(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "File too large - max 10MB"
         ) from None
-    return PrescriptionResponse.model_validate(prescription)
+    return _to_response(prescription, current_user)
 
 
 @router.get("", response_model=list[PrescriptionResponse])
@@ -65,7 +81,10 @@ async def list_prescriptions(
         if current_user.role in _STAFF_ROLES
         else await service.list_for_customer(current_user.user_id)
     )
-    return [PrescriptionResponse.model_validate(p) for p in prescriptions]
+    customers_by_id = await service.get_customers(
+        list({p.customer_id for p in prescriptions})
+    )
+    return [_to_response(p, customers_by_id.get(p.customer_id)) for p in prescriptions]
 
 
 @router.get("/{prescription_id}", response_model=PrescriptionResponse)
@@ -83,7 +102,14 @@ async def get_prescription(
     if not is_owner and current_user.role not in _STAFF_ROLES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your prescription")
 
-    return PrescriptionResponse.model_validate(prescription)
+    customer = (
+        current_user
+        if is_owner
+        else (await service.get_customers([prescription.customer_id])).get(
+            prescription.customer_id
+        )
+    )
+    return _to_response(prescription, customer)
 
 
 @router.patch(
@@ -109,4 +135,7 @@ async def review_prescription(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Prescription was already reviewed"
         ) from None
-    return PrescriptionResponse.model_validate(prescription)
+    customer = (await service.get_customers([prescription.customer_id])).get(
+        prescription.customer_id
+    )
+    return _to_response(prescription, customer)

@@ -71,6 +71,10 @@ class OrderStatusHistoryResponse(BaseModel):
 class OrderResponse(BaseModel):
     order_id: int
     customer_id: int
+    # Populated for staff views (customers already know who they are) - lets
+    # the staff order list/detail show a name instead of a bare id.
+    customer_name: str | None = None
+    customer_email: str | None = None
     status: OrderStatus
     fulfillment_type: FulfillmentType
     delivery_address: str | None
