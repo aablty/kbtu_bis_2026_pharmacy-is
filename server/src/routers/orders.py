@@ -22,9 +22,12 @@ from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
+from src.models.stock_batch import OrderItemBatch, StockBatch
+from src.models.supplier import Supplier
 from src.routers.deps import CurrentUser, get_order_service, require_role
 from src.schemas.orders import (
     OrderCreate,
+    OrderItemBatchResponse,
     OrderItemResponse,
     OrderResponse,
     OrderStatusHistoryResponse,
@@ -44,6 +47,7 @@ def _to_response(
     items: list[OrderItem],
     payment: Payment | None,
     history: list[OrderStatusHistory],
+    item_batches: dict[int, list[tuple[OrderItemBatch, StockBatch, Supplier]]],
 ) -> OrderResponse:
     return OrderResponse(
         order_id=order.order_id,
@@ -54,7 +58,28 @@ def _to_response(
         prescription_id=order.prescription_id,
         total_amount=order.total_amount,
         created_at=order.created_at,
-        items=[OrderItemResponse.model_validate(i) for i in items],
+        items=[
+            OrderItemResponse(
+                order_item_id=item.order_item_id,
+                medicine_id=item.medicine_id,
+                medicine_name=item.medicine_name,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                batches=[
+                    OrderItemBatchResponse(
+                        batch_id=batch.batch_id,
+                        quantity=order_item_batch.quantity,
+                        barcode=batch.barcode,
+                        expiry_date=batch.expiry_date,
+                        supplier_name=supplier.name,
+                    )
+                    for order_item_batch, batch, supplier in item_batches.get(
+                        item.order_item_id, []
+                    )
+                ],
+            )
+            for item in items
+        ],
         payment=PaymentResponse.model_validate(payment) if payment else None,
         history=[OrderStatusHistoryResponse.model_validate(h) for h in history],
     )
@@ -108,9 +133,10 @@ async def place_order(
             status.HTTP_400_BAD_REQUEST, "Prescription has not been approved"
         ) from None
     items = await service.get_items(order.order_id)
+    item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order.order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history)
+    return _to_response(order, items, payment, history, item_batches)
 
 
 @router.get("", response_model=list[OrderResponse])
@@ -136,6 +162,10 @@ async def list_orders(
     }
     for entry in await service.get_history_for_orders(order_ids):
         history_by_order[entry.order_id].append(entry)
+    all_item_ids = [
+        item.order_item_id for items in items_by_order.values() for item in items
+    ]
+    item_batches = await service.get_item_batches(all_item_ids)
 
     return [
         _to_response(
@@ -143,6 +173,7 @@ async def list_orders(
             items_by_order[order.order_id],
             payment_by_order.get(order.order_id),
             history_by_order[order.order_id],
+            item_batches,
         )
         for order in orders
     ]
@@ -162,9 +193,10 @@ async def get_order(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your order")
 
     items = await service.get_items(order_id)
+    item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history)
+    return _to_response(order, items, payment, history, item_batches)
 
 
 @router.patch(
@@ -203,6 +235,7 @@ async def update_order_status(
             status.HTTP_429_TOO_MANY_REQUESTS, "Too many failed attempts"
         ) from None
     items = await service.get_items(order_id)
+    item_batches = await service.get_item_batches([i.order_item_id for i in items])
     payment = await service.get_payment(order_id)
     history = await service.get_history(order.order_id)
-    return _to_response(order, items, payment, history)
+    return _to_response(order, items, payment, history, item_batches)

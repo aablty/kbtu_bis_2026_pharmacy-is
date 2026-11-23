@@ -8,9 +8,10 @@ from src.core.exceptions import (
     MedicineNotFoundError,
     StockVersionConflictError,
     SupplierNotFoundError,
+    WriteOffExceedsRemainingError,
 )
 from src.models.medicine import Medicine
-from src.models.stock_batch import StockBatch
+from src.models.stock_batch import BatchWriteOff, StockBatch
 from src.repositories.batch_repository import BatchRepository
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.supplier_repository import SupplierRepository
@@ -24,7 +25,12 @@ class BatchService:
         self._suppliers = SupplierRepository(session)
 
     async def receive_stock(
-        self, medicine_id: int, supplier_id: int, quantity: int, expiry_date: date
+        self,
+        medicine_id: int,
+        supplier_id: int,
+        quantity: int,
+        expiry_date: date,
+        received_by: int | None = None,
     ) -> StockBatch:
         if await self._medicines.get_by_id(medicine_id) is None:
             raise MedicineNotFoundError(medicine_id)
@@ -32,11 +38,36 @@ class BatchService:
             raise SupplierNotFoundError(supplier_id)
 
         batch = await self._batches.create(
-            medicine_id, supplier_id, quantity, expiry_date
+            medicine_id, supplier_id, quantity, expiry_date, received_by
         )
         await self._medicines.adjust_stock_quantity(medicine_id, quantity)
         await self._session.commit()
         return batch
+
+    async def list_recent(
+        self, received_by: int | None, limit: int
+    ) -> list[tuple[StockBatch, str | None]]:
+        return await self._batches.list_recent(received_by, limit)
+
+    async def write_off(
+        self, batch_id: int, quantity: int, reason: str | None, written_off_by: int
+    ) -> BatchWriteOff:
+        batch = await self._batches.get_by_id(batch_id)
+        if batch is None:
+            raise BatchNotFoundError(batch_id)
+        if (
+            quantity > batch.quantity_remaining
+            or not await self._batches.decrement_atomic(batch_id, quantity)
+        ):
+            raise WriteOffExceedsRemainingError(
+                batch_id, quantity, batch.quantity_remaining
+            )
+        await self._medicines.adjust_stock_quantity(batch.medicine_id, -quantity)
+        write_off = await self._batches.create_write_off(
+            batch_id, quantity, reason, written_off_by
+        )
+        await self._session.commit()
+        return write_off
 
     async def get_by_barcode(self, barcode: str) -> StockBatch:
         batch = await self._batches.get_by_barcode(barcode)

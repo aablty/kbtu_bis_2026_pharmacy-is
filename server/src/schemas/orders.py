@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, Field, model_validator
@@ -33,11 +33,21 @@ class OrderCreate(BaseModel):
         return self
 
 
+class OrderItemBatchResponse(BaseModel):
+    batch_id: int
+    quantity: int
+    barcode: str | None
+    expiry_date: date
+    supplier_name: str
+
+
 class OrderItemResponse(BaseModel):
+    order_item_id: int
     medicine_id: int
     medicine_name: str
     quantity: int
     unit_price: Decimal
+    batches: list[OrderItemBatchResponse] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

@@ -26,6 +26,8 @@ class BatchResponse(BaseModel):
     expiry_date: date
     barcode: str | None
     received_at: datetime
+    received_by: int | None
+    received_by_name: str | None
 
     model_config = {"from_attributes": True}
 
@@ -37,3 +39,18 @@ class BatchByBarcodeResponse(BaseModel):
     quantity_remaining: int
     expiry_date: date
     barcode: str | None
+
+
+class BatchWriteOffCreate(BaseModel):
+    quantity: int = Field(gt=0)
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class BatchWriteOffResponse(BaseModel):
+    id: int
+    batch_id: int
+    quantity: int
+    reason: str | None
+    written_off_by: int
+    written_off_at: datetime
+    model_config = {"from_attributes": True}

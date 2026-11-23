@@ -26,6 +26,8 @@ from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.order_status_history import OrderStatusHistory
 from src.models.payment import Payment
+from src.models.stock_batch import OrderItemBatch, StockBatch
+from src.models.supplier import Supplier
 from src.repositories.batch_repository import BatchRepository
 from src.repositories.medicine_repository import MedicineRepository
 from src.repositories.order_repository import OrderRepository
@@ -207,6 +209,17 @@ class OrderService:
 
     async def get_items_for_orders(self, order_ids: list[int]) -> list[OrderItem]:
         return await self._orders.get_items_for_orders(order_ids)
+
+    async def get_item_batches(
+        self, order_item_ids: list[int]
+    ) -> dict[int, list[tuple[OrderItemBatch, StockBatch, Supplier]]]:
+        rows = await self._batches.get_allocations_for_order_items(order_item_ids)
+        grouped: dict[int, list[tuple[OrderItemBatch, StockBatch, Supplier]]] = {}
+        for order_item_id, order_item_batch, batch, supplier in rows:
+            grouped.setdefault(order_item_id, []).append(
+                (order_item_batch, batch, supplier)
+            )
+        return grouped
 
     async def get_payments_for_orders(self, order_ids: list[int]) -> list[Payment]:
         return await self._payments.get_latest_for_orders(order_ids)

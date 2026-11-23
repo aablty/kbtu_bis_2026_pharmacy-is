@@ -453,6 +453,77 @@ async def test_order_item_includes_medicine_name(
     assert resp.json()["items"][0]["medicine_name"] == expected_name
 
 
+async def test_order_item_exposes_the_batch_it_was_drawn_from_to_its_owner(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    _, customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    _, other_customer_token = await make_user_with_token(UserRole.CUSTOMER)
+    admin_headers = auth_headers(admin_token)
+
+    resp = await client.post(
+        "/suppliers",
+        json={"name": f"Trace Supplier {uuid.uuid4().hex[:6]}"},
+        headers=admin_headers,
+    )
+    supplier_id = resp.json()["supplier_id"]
+    supplier_name = resp.json()["name"]
+    resp = await client.post(
+        "/categories",
+        json={"name": f"Category {uuid.uuid4().hex[:6]}"},
+        headers=admin_headers,
+    )
+    category_id = resp.json()["category_id"]
+    resp = await client.post(
+        "/medicines",
+        json={
+            "name": f"Medicine {uuid.uuid4().hex[:6]}",
+            "price": "5.00",
+            "category_id": category_id,
+            "supplier_id": supplier_id,
+            "stock_quantity": 0,
+        },
+        headers=admin_headers,
+    )
+    medicine_id = resp.json()["medicine_id"]
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 10,
+            "expiry_date": "2099-12-31",
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    batch_id = resp.json()["batch_id"]
+    barcode = resp.json()["barcode"]
+
+    resp = await client.post(
+        "/orders",
+        json=_order_payload(medicine_id),
+        headers=auth_headers(customer_token),
+    )
+    assert resp.status_code == 201, resp.text
+    order_id = resp.json()["order_id"]
+    batches = resp.json()["items"][0]["batches"]
+    assert len(batches) == 1
+    assert batches[0]["batch_id"] == batch_id
+    assert batches[0]["barcode"] == barcode
+    assert batches[0]["supplier_name"] == supplier_name
+    assert batches[0]["expiry_date"] == "2099-12-31"
+
+    resp = await client.get(f"/orders/{order_id}", headers=auth_headers(customer_token))
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["batches"][0]["batch_id"] == batch_id
+
+    resp = await client.get(
+        f"/orders/{order_id}", headers=auth_headers(other_customer_token)
+    )
+    assert resp.status_code == 403
+
+
 # The concurrent idempotency-key race (two requests, same key, neither has
 # committed when the other checks) is covered in tests/test_order_service.py
 # using separate sessions per "request" - reusing one shared session here

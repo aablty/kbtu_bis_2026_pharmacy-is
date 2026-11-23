@@ -11,7 +11,7 @@ from src.models.order_item import OrderItem
 from src.models.payment import Payment
 from src.models.sale import Sale
 from src.models.sale_item import SaleItem
-from src.models.stock_batch import StockBatch
+from src.models.stock_batch import BatchWriteOff, StockBatch
 
 
 class AnalyticsRepository:
@@ -116,3 +116,27 @@ class AnalyticsRepository:
         )
         result = await self._session.execute(stmt)
         return [(row.day, row.total_revenue) for row in result]
+
+    async def wastage(
+        self, since: datetime | None
+    ) -> list[tuple[int, str, int, Decimal]]:
+        """Total written-off quantity and value per medicine, valued at the
+        medicine's *current* price (not price-at-write-off-time - this repo
+        keeps no price history, and a course-project wastage report doesn't
+        need one)."""
+        stmt = (
+            select(
+                StockBatch.medicine_id,
+                Medicine.name,
+                func.sum(BatchWriteOff.quantity).label("quantity"),
+                func.sum(BatchWriteOff.quantity * Medicine.price).label("value"),
+            )
+            .join(StockBatch, StockBatch.batch_id == BatchWriteOff.batch_id)
+            .join(Medicine, Medicine.medicine_id == StockBatch.medicine_id)
+            .group_by(StockBatch.medicine_id, Medicine.name)
+            .order_by(func.sum(BatchWriteOff.quantity * Medicine.price).desc())
+        )
+        if since is not None:
+            stmt = stmt.where(BatchWriteOff.written_off_at >= since)
+        result = await self._session.execute(stmt)
+        return [(row.medicine_id, row.name, row.quantity, row.value) for row in result]

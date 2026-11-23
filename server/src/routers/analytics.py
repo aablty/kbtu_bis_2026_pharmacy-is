@@ -9,6 +9,7 @@ from src.schemas.analytics import (
     ExpiringBatchResponse,
     LowStockMedicineResponse,
     RevenueReport,
+    WastageReport,
 )
 from src.services.analytics_service import AnalyticsService
 
@@ -46,3 +47,11 @@ async def revenue(
     service: AnalyticsServiceDep, days: Annotated[int, Query(ge=1, le=365)] = 30
 ) -> RevenueReport:
     return await service.revenue(days)
+
+
+@router.get("/wastage", response_model=WastageReport)
+async def wastage(
+    service: AnalyticsServiceDep,
+    days: Annotated[int | None, Query(ge=1, le=3650)] = None,
+) -> WastageReport:
+    return await service.wastage(days)

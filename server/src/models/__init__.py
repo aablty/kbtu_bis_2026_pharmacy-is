@@ -9,11 +9,12 @@ from src.models.payment import Payment
 from src.models.prescription import Prescription
 from src.models.sale import Sale
 from src.models.sale_item import SaleItem
-from src.models.stock_batch import OrderItemBatch, StockBatch
+from src.models.stock_batch import BatchWriteOff, OrderItemBatch, StockBatch
 from src.models.supplier import Supplier
 from src.models.user import User
 
 __all__ = [
+    "BatchWriteOff",
     "Category",
     "Medicine",
     "Notification",

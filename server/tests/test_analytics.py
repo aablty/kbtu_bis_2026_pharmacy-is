@@ -222,6 +222,76 @@ async def test_best_sellers_merges_renamed_medicine_into_one_row(
     assert matches[0]["units_sold"] == 7
 
 
+async def test_wastage_requires_admin(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    for role in (UserRole.PHARMACIST, UserRole.CASHIER, UserRole.CUSTOMER):
+        _, token = await make_user_with_token(role)
+        resp = await client.get("/analytics/wastage", headers=auth_headers(token))
+        assert resp.status_code == 403
+
+
+async def test_wastage_sums_quantity_and_value_per_medicine(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    admin_headers = auth_headers(admin_token)
+
+    resp = await client.post(
+        "/suppliers",
+        json={"name": f"Supplier {uuid.uuid4().hex[:6]}"},
+        headers=admin_headers,
+    )
+    supplier_id = resp.json()["supplier_id"]
+    resp = await client.post(
+        "/categories",
+        json={"name": f"Category {uuid.uuid4().hex[:6]}"},
+        headers=admin_headers,
+    )
+    category_id = resp.json()["category_id"]
+    resp = await client.post(
+        "/medicines",
+        json={
+            "name": f"Medicine {uuid.uuid4().hex[:6]}",
+            "price": "3.00",
+            "category_id": category_id,
+            "supplier_id": supplier_id,
+            "stock_quantity": 0,
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    medicine_id = resp.json()["medicine_id"]
+
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 5,
+            "expiry_date": "2099-12-31",
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 201, resp.text
+    batch_id = resp.json()["batch_id"]
+
+    resp = await client.post(
+        f"/batches/{batch_id}/write-off",
+        json={"quantity": 3, "reason": "expired"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 201, resp.text
+
+    resp = await client.get("/analytics/wastage", headers=auth_headers(admin_token))
+    assert resp.status_code == 200
+    body = resp.json()
+    matches = [item for item in body["items"] if item["medicine_id"] == medicine_id]
+    assert len(matches) == 1
+    assert matches[0]["quantity"] == 3
+    assert Decimal(str(matches[0]["value"])) == Decimal("9.00")
+
+
 async def test_low_stock_lists_medicines_at_or_under_threshold(
     client: AsyncClient, make_user_with_token: MakeUserWithToken
 ) -> None:

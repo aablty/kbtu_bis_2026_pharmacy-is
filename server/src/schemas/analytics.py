@@ -35,3 +35,16 @@ class RevenueDayResponse(BaseModel):
 class RevenueReport(BaseModel):
     days: list[RevenueDayResponse]
     total_revenue: Decimal
+
+
+class WastageItemResponse(BaseModel):
+    medicine_id: int
+    medicine_name: str
+    quantity: int
+    value: Decimal
+
+
+class WastageReport(BaseModel):
+    items: list[WastageItemResponse]
+    total_quantity: int
+    total_value: Decimal

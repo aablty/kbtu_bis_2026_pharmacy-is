@@ -3,7 +3,9 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.stock_batch import OrderItemBatch, StockBatch
+from src.models.stock_batch import BatchWriteOff, OrderItemBatch, StockBatch
+from src.models.supplier import Supplier
+from src.models.user import User
 
 
 class BatchRepository:
@@ -11,7 +13,12 @@ class BatchRepository:
         self._session = session
 
     async def create(
-        self, medicine_id: int, supplier_id: int, quantity: int, expiry_date: date
+        self,
+        medicine_id: int,
+        supplier_id: int,
+        quantity: int,
+        expiry_date: date,
+        received_by: int | None = None,
     ) -> StockBatch:
         batch = StockBatch(
             medicine_id=medicine_id,
@@ -20,6 +27,7 @@ class BatchRepository:
             quantity_remaining=quantity,
             expiry_date=expiry_date,
             barcode=None,
+            received_by=received_by,
         )
         self._session.add(batch)
         await self._session.flush()  # need batch.batch_id to generate the barcode
@@ -130,3 +138,50 @@ class BatchRepository:
             .order_by(StockBatch.expiry_date.asc())
         )
         return list(result.scalars().all())
+
+    async def list_recent(
+        self, received_by: int | None, limit: int
+    ) -> list[tuple[StockBatch, str | None]]:
+        stmt = (
+            select(StockBatch, User.full_name, User.email)
+            .outerjoin(User, User.user_id == StockBatch.received_by)
+            .order_by(StockBatch.received_at.desc())
+            .limit(limit)
+        )
+        if received_by is not None:
+            stmt = stmt.where(StockBatch.received_by == received_by)
+        result = await self._session.execute(stmt)
+        return [
+            (batch, full_name or email if batch.received_by is not None else None)
+            for batch, full_name, email in result
+        ]
+
+    async def create_write_off(
+        self, batch_id: int, quantity: int, reason: str | None, written_off_by: int
+    ) -> BatchWriteOff:
+        write_off = BatchWriteOff(
+            batch_id=batch_id,
+            quantity=quantity,
+            reason=reason,
+            written_off_by=written_off_by,
+        )
+        self._session.add(write_off)
+        await self._session.flush()
+        return write_off
+
+    async def get_allocations_for_order_items(
+        self, order_item_ids: list[int]
+    ) -> list[tuple[int, OrderItemBatch, StockBatch, Supplier]]:
+        if not order_item_ids:
+            return []
+        stmt = (
+            select(OrderItemBatch, StockBatch, Supplier)
+            .join(StockBatch, StockBatch.batch_id == OrderItemBatch.batch_id)
+            .join(Supplier, Supplier.supplier_id == StockBatch.supplier_id)
+            .where(OrderItemBatch.order_item_id.in_(order_item_ids))
+        )
+        result = await self._session.execute(stmt)
+        return [
+            (order_item_batch.order_item_id, order_item_batch, batch, supplier)
+            for order_item_batch, batch, supplier in result
+        ]

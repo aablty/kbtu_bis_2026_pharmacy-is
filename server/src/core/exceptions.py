@@ -186,3 +186,13 @@ class PasswordNotSetError(DomainError):
 
 class BatchNotFoundError(DomainError):
     pass
+
+
+class WriteOffExceedsRemainingError(DomainError):
+    def __init__(self, batch_id: int, quantity: int, remaining: int) -> None:
+        self.batch_id = batch_id
+        self.quantity = quantity
+        self.remaining = remaining
+        super().__init__(
+            f"Cannot write off {quantity} from batch {batch_id}: only {remaining} remaining"
+        )
