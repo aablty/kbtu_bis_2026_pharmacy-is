@@ -78,7 +78,11 @@ class MedicineResponse(BaseModel):
     name: str
     manufacturer: str | None
     dosage_form: DosageForm | None
-    expiry_date: date | None
+    # Not a model attribute (MEDICINES.expiry_date was dropped) - the router
+    # always overwrites this via model_copy with the nearest in-stock batch's
+    # expiry (or None). Default here only so model_validate(medicine) doesn't
+    # require a same-named attribute to exist on the ORM object.
+    expiry_date: date | None = None
     price: Decimal
     requires_prescription: bool
     stock_quantity: int

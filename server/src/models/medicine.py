@@ -1,10 +1,9 @@
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
     Boolean,
-    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -34,7 +33,10 @@ class Medicine(Base):
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
-    expiry_date: Mapped[date | None] = mapped_column(Date)
+    # expiry_date was dropped (c2a9e6f1d4b7's successor migration) - expiry is
+    # batch-level now (STOCK_BATCHES.expiry_date); the public API's
+    # MedicineResponse.expiry_date field is entirely derived from batches,
+    # never read from this model.
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     requires_prescription: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
