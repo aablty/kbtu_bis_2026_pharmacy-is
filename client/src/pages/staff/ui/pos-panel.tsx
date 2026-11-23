@@ -47,7 +47,6 @@ import {
 import { Field, FieldLabel } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
 import { ListEmpty } from "@/shared/ui/list-empty";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -70,7 +69,6 @@ export function PosPanel() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<UserSearchResult | null>(null);
   const [customerOpen, setCustomerOpen] = useState(false);
-  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [receipt, setReceipt] = useState<Sale | null>(null);
@@ -317,58 +315,38 @@ export function PosPanel() {
                 </Button>
               </div>
             ) : (
-              <Popover
-                open={customerPopoverOpen}
-                onOpenChange={setCustomerPopoverOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    id="pos-customer"
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start font-normal text-muted-foreground"
-                  >
-                    {t("staff.pos.customerLabel")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-(--radix-popover-trigger-width) p-0"
-                  align="start"
-                >
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      value={customerSearch}
-                      onValueChange={setCustomerSearch}
-                      placeholder={t("staff.pos.customerLabel")}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {t("staff.pos.customerNoResults")}
-                      </CommandEmpty>
-                      {customerResults.data?.map((user) => (
-                        <CommandItem
-                          key={user.user_id}
-                          value={String(user.user_id)}
-                          onSelect={() => {
-                            setSelectedCustomer(user);
-                            setCustomerPopoverOpen(false);
-                            setCustomerSearch("");
-                          }}
-                        >
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate">
-                              {user.full_name ?? user.email}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {user.email}
-                            </span>
-                          </span>
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Command shouldFilter={false} className="rounded-xl border">
+                <CommandInput
+                  id="pos-customer"
+                  value={customerSearch}
+                  onValueChange={setCustomerSearch}
+                  placeholder={t("staff.pos.customerLabel")}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    {t("staff.pos.customerNoResults")}
+                  </CommandEmpty>
+                  {customerResults.data?.map((user) => (
+                    <CommandItem
+                      key={user.user_id}
+                      value={String(user.user_id)}
+                      onSelect={() => {
+                        setSelectedCustomer(user);
+                        setCustomerSearch("");
+                      }}
+                    >
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate">
+                          {user.full_name ?? user.email}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </span>
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
             )}
           </Field>
         </CollapsibleContent>
