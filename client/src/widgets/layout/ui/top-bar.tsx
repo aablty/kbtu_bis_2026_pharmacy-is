@@ -56,7 +56,7 @@ export function TopBar({
                 <MenuIcon />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="sm:max-w-sm">
               <SheetHeader>
                 <SheetTitle>
                   <AppLogo />

@@ -19,7 +19,7 @@ export type {
   RevenueReport,
 } from "./analytics-types";
 export { authEndpoints } from "./auth-endpoints";
-export type { UserProfile, UserRole } from "./auth-types";
+export type { UserProfile, UserRole, UserSearchResult } from "./auth-types";
 export { catalogEndpoints } from "./catalog-endpoints";
 export type { Category, Medicine, MedicineList } from "./catalog-types";
 export { apiClient, apiMutator } from "./client";

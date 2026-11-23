@@ -2,13 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrowserQRCodeReader } from "@zxing/browser";
 import {
   ArrowRightIcon,
-  CameraIcon,
   ChevronRightIcon,
   FlashlightIcon,
   PlusIcon,
+  QrCodeIcon,
   ReceiptIcon,
   Trash2Icon,
   UserPlusIcon,
+  XIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +21,8 @@ import {
   type Medicine,
   type Sale,
   staffEndpoints,
+  type UserSearchResult,
+  userEndpoints,
 } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format-date";
 import { Button } from "@/shared/ui/button";
@@ -29,6 +32,13 @@ import {
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible";
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/shared/ui/command";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -37,6 +47,7 @@ import {
 import { Field, FieldLabel } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
 import { ListEmpty } from "@/shared/ui/list-empty";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -56,12 +67,18 @@ export function PosPanel() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
-  const [customerId, setCustomerId] = useState("");
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<UserSearchResult | null>(null);
   const [customerOpen, setCustomerOpen] = useState(false);
+  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
   const [receipt, setReceipt] = useState<Sale | null>(null);
   const [saleOpen, setSaleOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
-  const [scanError, setScanError] = useState(false);
+  const [scanError, setScanError] = useState<"unknown" | "outOfStock" | null>(
+    null,
+  );
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
@@ -80,6 +97,21 @@ export function PosPanel() {
     enabled: query.length >= 2,
   });
 
+  const customerResults = useQuery({
+    queryKey: ["customer-search", customerQuery],
+    queryFn: () => userEndpoints.search(customerQuery),
+    enabled: customerQuery.length >= 2,
+  });
+
+  // Debounce so every keystroke doesn't fire a request.
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setCustomerQuery(customerSearch.trim()),
+      300,
+    );
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
+
   const saleDetail = useQuery({
     queryKey: ["staff-sale", selectedSaleId],
     queryFn: () => getSaleSalesSaleIdGet(selectedSaleId as number),
@@ -91,7 +123,7 @@ export function PosPanel() {
     onSuccess: (sale) => {
       setReceipt(sale);
       setLines([]);
-      setCustomerId("");
+      setSelectedCustomer(null);
       setCustomerOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["staff-sales"] });
       void queryClient.invalidateQueries({ queryKey: ["medicines"] });
@@ -152,13 +184,18 @@ export function PosPanel() {
         const barcode = result.getText();
         const batch = await getByBarcodeBatchesByBarcodeBarcodeGet(barcode);
         if (cancelled) return;
+        if (batch.quantity_remaining <= 0) {
+          setScanError("outOfStock");
+          setScanOpen(false);
+          return;
+        }
         const medicine = await catalogEndpoints.medicine(batch.medicine_id);
         if (cancelled) return;
         add(medicine);
         setScanOpen(false);
       } catch {
         if (!cancelled) {
-          setScanError(true);
+          setScanError("unknown");
           setScanOpen(false);
         }
       }
@@ -237,9 +274,7 @@ export function PosPanel() {
         </ul>
       )}
 
-      {/* No customer-search endpoint exists on the backend (only /users/me) -
-          the numeric id stays, but tucked behind a disclosure so it reads
-          as secondary rather than a required field. */}
+      {/* Linking a customer is optional - a sale with no selection stays a walk-in sale. */}
       <Collapsible open={customerOpen} onOpenChange={setCustomerOpen}>
         <CollapsibleTrigger asChild>
           <Button
@@ -249,8 +284,10 @@ export function PosPanel() {
             className="w-full justify-start gap-2 text-muted-foreground"
           >
             <UserPlusIcon className="size-4" />
-            {customerId
-              ? t("staff.pos.customerLinked", { id: customerId })
+            {selectedCustomer
+              ? t("staff.pos.customerLinked", {
+                  name: selectedCustomer.full_name ?? selectedCustomer.email,
+                })
               : t("staff.pos.customer")}
           </Button>
         </CollapsibleTrigger>
@@ -259,14 +296,80 @@ export function PosPanel() {
             <FieldLabel htmlFor="pos-customer">
               {t("staff.pos.customerLabel")}
             </FieldLabel>
-            <Input
-              id="pos-customer"
-              type="number"
-              min={1}
-              inputMode="numeric"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-            />
+            {selectedCustomer ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border p-2 text-sm">
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">
+                    {selectedCustomer.full_name ?? selectedCustomer.email}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {selectedCustomer.email}
+                  </span>
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t("staff.pos.customerClear")}
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  <XIcon />
+                </Button>
+              </div>
+            ) : (
+              <Popover
+                open={customerPopoverOpen}
+                onOpenChange={setCustomerPopoverOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    id="pos-customer"
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start font-normal text-muted-foreground"
+                  >
+                    {t("staff.pos.customerLabel")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-(--radix-popover-trigger-width) p-0"
+                  align="start"
+                >
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      value={customerSearch}
+                      onValueChange={setCustomerSearch}
+                      placeholder={t("staff.pos.customerLabel")}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {t("staff.pos.customerNoResults")}
+                      </CommandEmpty>
+                      {customerResults.data?.map((user) => (
+                        <CommandItem
+                          key={user.user_id}
+                          value={String(user.user_id)}
+                          onSelect={() => {
+                            setSelectedCustomer(user);
+                            setCustomerPopoverOpen(false);
+                            setCustomerSearch("");
+                          }}
+                        >
+                          <span className="flex min-w-0 flex-col">
+                            <span className="truncate">
+                              {user.full_name ?? user.email}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {user.email}
+                            </span>
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
           </Field>
         </CollapsibleContent>
       </Collapsible>
@@ -288,7 +391,7 @@ export function PosPanel() {
               medicine_id: l.medicine.medicine_id,
               quantity: l.quantity,
             })),
-            customer_id: customerId ? Number(customerId) : null,
+            customer_id: selectedCustomer?.user_id ?? null,
           })
         }
       >
@@ -338,17 +441,19 @@ export function PosPanel() {
             aria-label={t("staff.pos.scan")}
             title={t("staff.pos.scan")}
             onClick={() => {
-              setScanError(false);
+              setScanError(null);
               setScanOpen(true);
             }}
           >
-            <CameraIcon />
+            <QrCodeIcon />
           </Button>
         </form>
 
         {scanError ? (
           <p role="alert" className="text-sm text-destructive">
-            {t("staff.pos.scanError")}
+            {scanError === "outOfStock"
+              ? t("staff.pos.scanOutOfStock")
+              : t("staff.pos.scanError")}
           </p>
         ) : null}
 
@@ -450,7 +555,7 @@ export function PosPanel() {
         open={scanOpen}
         onOpenChange={(open) => {
           setScanOpen(open);
-          if (!open) setScanError(false);
+          if (!open) setScanError(null);
         }}
       >
         <DialogContent className="sm:max-w-sm">

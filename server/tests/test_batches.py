@@ -223,3 +223,84 @@ async def test_write_off_requires_admin_or_pharmacist(
             headers=auth_headers(token),
         )
         assert resp.status_code == 403
+
+
+async def test_get_by_barcode_returns_batch_and_medicine_info(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    medicine_id, supplier_id = await _setup_medicine_and_supplier(
+        client, auth_headers(admin_token)
+    )
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 10,
+            "expiry_date": "2099-12-31",
+        },
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 201, resp.text
+    batch = resp.json()
+    barcode = batch["barcode"]
+    assert barcode
+
+    _, cashier_token = await make_user_with_token(UserRole.CASHIER)
+    resp = await client.get(
+        f"/batches/by-barcode/{barcode}", headers=auth_headers(cashier_token)
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["batch_id"] == batch["batch_id"]
+    assert body["medicine_id"] == medicine_id
+    assert body["barcode"] == barcode
+    assert body["quantity_remaining"] == 10
+
+
+async def test_get_by_barcode_unknown_barcode_returns_404(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, cashier_token = await make_user_with_token(UserRole.CASHIER)
+
+    resp = await client.get(
+        "/batches/by-barcode/does-not-exist-barcode",
+        headers=auth_headers(cashier_token),
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"]
+
+
+async def test_get_by_barcode_with_zero_remaining_still_returns_200(
+    client: AsyncClient, make_user_with_token: MakeUserWithToken
+) -> None:
+    _, admin_token = await make_user_with_token(UserRole.ADMIN)
+    medicine_id, supplier_id = await _setup_medicine_and_supplier(
+        client, auth_headers(admin_token)
+    )
+    resp = await client.post(
+        "/batches",
+        json={
+            "medicine_id": medicine_id,
+            "supplier_id": supplier_id,
+            "quantity": 5,
+            "expiry_date": "2099-12-31",
+        },
+        headers=auth_headers(admin_token),
+    )
+    batch = resp.json()
+    barcode = batch["barcode"]
+
+    resp = await client.post(
+        f"/batches/{batch['batch_id']}/write-off",
+        json={"quantity": 5, "reason": "fully written off for test"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 201, resp.text
+
+    resp = await client.get(
+        f"/batches/by-barcode/{barcode}", headers=auth_headers(admin_token)
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["quantity_remaining"] == 0

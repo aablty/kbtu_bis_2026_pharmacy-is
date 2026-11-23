@@ -1,4 +1,4 @@
-import type { UserProfile } from "./auth-types";
+import type { UserProfile, UserSearchResult } from "./auth-types";
 import { apiClient } from "./client";
 
 export const userEndpoints = {
@@ -7,5 +7,9 @@ export const userEndpoints = {
   changePassword: (body: { current_password: string; new_password: string }) =>
     apiClient
       .post<{ message: string }>("/users/me/password", body)
+      .then((r) => r.data),
+  search: (q: string, limit = 10) =>
+    apiClient
+      .get<UserSearchResult[]>("/users/search", { params: { q, limit } })
       .then((r) => r.data),
 };

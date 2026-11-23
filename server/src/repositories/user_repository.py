@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.enums import UserRole
@@ -36,5 +36,22 @@ class UserRepository:
     async def list_active_by_roles(self, *roles: UserRole) -> list[User]:
         result = await self._session.execute(
             select(User).where(User.role.in_(roles), User.is_active)
+        )
+        return list(result.scalars().all())
+
+    async def search_by_name_or_email(self, query: str, limit: int) -> list[User]:
+        pattern = f"%{query}%"
+        result = await self._session.execute(
+            select(User)
+            .where(
+                User.is_active,
+                User.role == UserRole.CUSTOMER,
+                or_(
+                    User.full_name.ilike(pattern),
+                    User.email.ilike(pattern),
+                ),
+            )
+            .order_by(User.full_name, User.email)
+            .limit(limit)
         )
         return list(result.scalars().all())

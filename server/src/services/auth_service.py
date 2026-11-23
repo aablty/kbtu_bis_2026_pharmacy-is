@@ -156,6 +156,9 @@ class AuthService:
         await self._session.commit()
         return user
 
+    async def search_users(self, query: str, limit: int) -> list[User]:
+        return await self._users.search_by_name_or_email(query, limit)
+
     async def change_password(
         self, user: User, current_password: str, new_password: str
     ) -> None:

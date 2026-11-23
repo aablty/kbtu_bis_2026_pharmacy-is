@@ -276,7 +276,7 @@ export function WastagePanel() {
         open={viewing !== null}
         onOpenChange={(open) => !open && setViewing(null)}
       >
-        <SheetContent className="w-full sm:max-w-md">
+        <SheetContent className="w-full sm:max-w-xl">
           {viewing ? (
             <>
               <SheetHeader>

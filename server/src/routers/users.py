@@ -1,13 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.core.exceptions import InvalidCurrentPasswordError, PasswordNotSetError
-from src.routers.deps import CurrentUser, get_auth_service
+from src.models.enums import UserRole
+from src.routers.deps import CurrentUser, get_auth_service, require_role
 from src.schemas.auth import (
     MessageResponse,
     PasswordChangeRequest,
     UserProfile,
+    UserSearchResult,
     UserUpdate,
 )
 from src.services.auth_service import AuthService
@@ -15,6 +17,21 @@ from src.services.auth_service import AuthService
 router = APIRouter(prefix="/users", tags=["users"])
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+_STAFF_ROLES = (UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CASHIER)
+
+
+@router.get(
+    "/search",
+    response_model=list[UserSearchResult],
+    dependencies=[Depends(require_role(*_STAFF_ROLES))],
+)
+async def search_users(
+    auth_service: AuthServiceDep,
+    q: Annotated[str, Query(min_length=1, max_length=120)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+) -> list[UserSearchResult]:
+    users = await auth_service.search_users(q, limit)
+    return [UserSearchResult.model_validate(user) for user in users]
 
 
 @router.get("/me", response_model=UserProfile)

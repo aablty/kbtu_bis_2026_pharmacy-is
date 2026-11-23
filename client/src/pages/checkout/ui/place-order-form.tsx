@@ -10,6 +10,7 @@ import {
   orderEndpoints,
   prescriptionEndpoints,
 } from "@/shared/api";
+import { formatDateTime } from "@/shared/lib/format-date";
 import { Button } from "@/shared/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/ui/field";
 import { FormErrorAlert } from "@/shared/ui/form-error-alert";
@@ -33,7 +34,7 @@ export function PlaceOrderForm({
 }: {
   needsPrescription: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -187,7 +188,7 @@ export function PlaceOrderForm({
                   key={p.prescription_id}
                   value={p.prescription_id}
                 >
-                  #{p.prescription_id}
+                  {formatDateTime(p.created_at, i18n.language)}
                 </NativeSelectOption>
               ))}
             </NativeSelect>

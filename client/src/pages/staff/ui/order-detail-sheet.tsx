@@ -33,7 +33,7 @@ export function OrderDetailSheet({
 
   return (
     <Sheet open={order !== null} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl">
+      <SheetContent className="w-[90vw] sm:w-[600px] sm:max-w-[600px]">
         {order ? (
           <>
             <SheetHeader>

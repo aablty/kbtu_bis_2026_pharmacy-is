@@ -23,3 +23,9 @@ export interface RegisterResponse {
 export interface MessageResponse {
   message: string;
 }
+
+export interface UserSearchResult {
+  user_id: number;
+  full_name: string | null;
+  email: string;
+}
