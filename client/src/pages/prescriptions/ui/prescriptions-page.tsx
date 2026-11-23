@@ -8,13 +8,15 @@ import {
   CheckCircle2Icon,
   ClockIcon,
   ExternalLinkIcon,
+  FileIcon,
   FileTextIcon,
   UploadIcon,
   XCircleIcon,
 } from "lucide-react";
-import { type ChangeEvent, type FormEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Prescription, prescriptionEndpoints } from "@/shared/api";
+import { fileKindFromMime, fileKindFromUrl } from "@/shared/lib/file-kind";
 import { formatDateTime } from "@/shared/lib/format-date";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -42,6 +44,7 @@ export function PrescriptionsPage() {
     null,
   );
   const [inputKey, setInputKey] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const prescriptions = useQuery({
     queryKey: ["prescriptions"],
@@ -62,6 +65,18 @@ export function PrescriptionsPage() {
     setFile(picked);
     setFileError(picked ? prescriptionFileError(picked) : null);
   }
+
+  // Only images get an object URL (no need to render PDF pages); revoke on
+  // every change/unmount so picking a new file doesn't leak the old blob.
+  useEffect(() => {
+    if (!file || fileKindFromMime(file.type) !== "image") {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,13 +108,26 @@ export function PrescriptionsPage() {
                 onChange={onPick}
               />
               {file ? (
-                <p className="text-sm">
-                  {file.name}
-                  <span className="text-muted-foreground">
-                    {" "}
-                    · {(file.size / 1024 / 1024).toFixed(1)} MB
-                  </span>
-                </p>
+                <div className="flex items-center gap-3">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt={t("prescriptions.previewAlt")}
+                      className="size-14 shrink-0 rounded-lg border object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-14 shrink-0 items-center justify-center rounded-lg border bg-muted">
+                      <FileIcon className="size-6 text-muted-foreground" />
+                    </span>
+                  )}
+                  <p className="text-sm">
+                    {file.name}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {(file.size / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                  </p>
+                </div>
               ) : null}
               <p className="text-xs text-muted-foreground">
                 {t("prescriptions.hint")}
@@ -166,26 +194,40 @@ function PrescriptionRow({
 }) {
   const { t } = useTranslation();
   const StatusIcon = STATUS_ICON[prescription.status];
+  const isImage = fileKindFromUrl(prescription.file_url) === "image";
   return (
-    <li className="flex items-center justify-between gap-3 p-4">
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="flex items-center gap-2 text-sm font-medium">
-          <FileTextIcon className="size-4 text-muted-foreground" />#
-          {prescription.prescription_id}
-          <time
-            dateTime={prescription.created_at}
-            className="font-normal text-muted-foreground"
-          >
-            {formatDateTime(prescription.created_at, language)}
-          </time>
-        </span>
-        {prescription.status === "rejected" && prescription.rejection_reason ? (
-          <span className="text-xs text-destructive">
-            {t("prescriptions.reason", {
-              reason: prescription.rejection_reason,
-            })}
+    <li className="flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="flex min-w-0 items-center gap-3">
+        {isImage ? (
+          <img
+            src={prescription.file_url}
+            alt=""
+            className="size-9 shrink-0 rounded-lg border object-cover"
+          />
+        ) : (
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted">
+            <FileTextIcon className="size-4 text-muted-foreground" />
           </span>
-        ) : null}
+        )}
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            #{prescription.prescription_id}
+            <time
+              dateTime={prescription.created_at}
+              className="font-normal text-muted-foreground"
+            >
+              {formatDateTime(prescription.created_at, language)}
+            </time>
+          </span>
+          {prescription.status === "rejected" &&
+          prescription.rejection_reason ? (
+            <span className="text-xs text-destructive">
+              {t("prescriptions.reason", {
+                reason: prescription.rejection_reason,
+              })}
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Badge

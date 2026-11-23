@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckIcon, PackageIcon, XIcon } from "lucide-react";
+import { CheckIcon, EyeIcon, PackageIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/features/browse-catalog";
@@ -29,6 +29,7 @@ import {
 import { Toggle } from "@/shared/ui/toggle";
 import { needsPickupCode, nextStatuses } from "../model/order-transitions";
 import { staffErrorKey } from "../model/staff-error";
+import { OrderDetailSheet } from "./order-detail-sheet";
 
 const BADGE: Record<OrderStatus, "secondary" | "outline" | "destructive"> = {
   pending: "outline",
@@ -56,11 +57,15 @@ export function OrdersPanel() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OrderStatus | "all">("all");
   const [rxOnly, setRxOnly] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const orders = useQuery({
     queryKey: ["staff-orders"],
     queryFn: staffEndpoints.orders.list,
   });
+  // Keep the open sheet in sync with the list after a status update instead
+  // of holding its own stale copy of the order.
+  const detailOrder = orders.data?.find((o) => o.order_id === detailId) ?? null;
 
   const update = useMutation({
     mutationFn: (vars: {
@@ -118,7 +123,10 @@ export function OrdersPanel() {
         size="sm"
         variant={target === "cancelled" ? "outline" : "default"}
         disabled={update.isPending}
-        onClick={() => move(order, target)}
+        onClick={(e) => {
+          e.stopPropagation();
+          move(order, target);
+        }}
         aria-label={t(`order.status.${target}`)}
         title={t(`order.status.${target}`)}
       >
@@ -226,7 +234,11 @@ export function OrdersPanel() {
               </TableHeader>
               <TableBody>
                 {shown.map((order) => (
-                  <TableRow key={order.order_id}>
+                  <TableRow
+                    key={order.order_id}
+                    className="cursor-pointer"
+                    onClick={() => setDetailId(order.order_id)}
+                  >
                     <TableCell className="font-medium">
                       {order.order_id}
                       {order.prescription_id ? (
@@ -246,6 +258,18 @@ export function OrdersPanel() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailId(order.order_id);
+                          }}
+                          aria-label={t("staff.orders.viewDetails")}
+                          title={t("staff.orders.viewDetails")}
+                        >
+                          <EyeIcon />
+                        </Button>
                         {actions(order)}
                       </div>
                     </TableCell>
@@ -278,14 +302,32 @@ export function OrdersPanel() {
                   </span>
                   <span>{formatDateTime(order.created_at, i18n.language)}</span>
                 </div>
-                {nextStatuses(order.status).length > 0 ? (
-                  <div className="flex flex-wrap gap-2">{actions(order)}</div>
-                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setDetailId(order.order_id)}
+                    aria-label={t("staff.orders.viewDetails")}
+                    title={t("staff.orders.viewDetails")}
+                  >
+                    <EyeIcon />
+                    {t("staff.orders.viewDetails")}
+                  </Button>
+                  {actions(order)}
+                </div>
               </li>
             ))}
           </ul>
         </>
       ) : null}
+
+      <OrderDetailSheet
+        order={detailOrder}
+        onOpenChange={(open) => {
+          if (!open) setDetailId(null);
+        }}
+        renderActions={(order) => actions(order)}
+      />
 
       <Dialog
         open={pending !== null}

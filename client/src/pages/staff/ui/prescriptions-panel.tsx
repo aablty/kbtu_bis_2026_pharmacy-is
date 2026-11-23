@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckIcon, ExternalLinkIcon, FileTextIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ExternalLinkIcon,
+  EyeIcon,
+  FileTextIcon,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -31,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/ui/table";
+import { PrescriptionDetailSheet } from "./prescription-detail-sheet";
 
 const BADGE: Record<
   PrescriptionStatus,
@@ -50,11 +57,16 @@ export function PrescriptionsPanel() {
   const [rejecting, setRejecting] = useState<Prescription | null>(null);
   const [reason, setReason] = useState("");
   const [search, setSearch] = useState("");
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const prescriptions = useQuery({
     queryKey: ["staff-prescriptions"],
     queryFn: prescriptionEndpoints.list,
   });
+  // Keep the open sheet in sync with the list after a review instead of
+  // holding its own stale copy of the prescription.
+  const detailPrescription =
+    prescriptions.data?.find((p) => p.prescription_id === detailId) ?? null;
 
   const review = useMutation({
     mutationFn: (vars: { id: number; approve: boolean; reason?: string }) =>
@@ -93,6 +105,7 @@ export function PrescriptionsPanel() {
           variant="ghost"
           size="icon-sm"
           aria-label={t("prescriptions.open")}
+          onClick={(e) => e.stopPropagation()}
         >
           <a href={p.file_url} target="_blank" rel="noreferrer">
             <ExternalLinkIcon />
@@ -105,9 +118,10 @@ export function PrescriptionsPanel() {
               disabled={review.isPending}
               aria-label={t("staff.prescriptions.approve")}
               title={t("staff.prescriptions.approve")}
-              onClick={() =>
-                review.mutate({ id: p.prescription_id, approve: true })
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                review.mutate({ id: p.prescription_id, approve: true });
+              }}
             >
               <CheckIcon />
               {t("staff.prescriptions.approve")}
@@ -118,7 +132,8 @@ export function PrescriptionsPanel() {
               disabled={review.isPending}
               aria-label={t("staff.prescriptions.reject")}
               title={t("staff.prescriptions.reject")}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 review.reset();
                 setRejecting(p);
               }}
@@ -212,7 +227,11 @@ export function PrescriptionsPanel() {
           </TableHeader>
           <TableBody>
             {shown.map((p) => (
-              <TableRow key={p.prescription_id}>
+              <TableRow
+                key={p.prescription_id}
+                className="cursor-pointer"
+                onClick={() => setDetailId(p.prescription_id)}
+              >
                 <TableCell className="font-medium">
                   {p.prescription_id}
                 </TableCell>
@@ -231,7 +250,21 @@ export function PrescriptionsPanel() {
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-1">{actions(p)}</div>
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailId(p.prescription_id);
+                      }}
+                      aria-label={t("staff.orders.viewDetails")}
+                      title={t("staff.orders.viewDetails")}
+                    >
+                      <EyeIcon />
+                    </Button>
+                    {actions(p)}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -263,7 +296,19 @@ export function PrescriptionsPanel() {
                 <span className="text-destructive">{p.rejection_reason}</span>
               ) : null}
             </div>
-            <div className="flex flex-wrap gap-2">{actions(p)}</div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setDetailId(p.prescription_id)}
+                aria-label={t("staff.orders.viewDetails")}
+                title={t("staff.orders.viewDetails")}
+              >
+                <EyeIcon />
+                {t("staff.orders.viewDetails")}
+              </Button>
+              {actions(p)}
+            </div>
           </li>
         ))}
       </ul>
@@ -306,6 +351,14 @@ export function PrescriptionsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PrescriptionDetailSheet
+        prescription={detailPrescription}
+        onOpenChange={(open) => {
+          if (!open) setDetailId(null);
+        }}
+        renderActions={(p) => actions(p)}
+      />
     </div>
   );
 }

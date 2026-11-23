@@ -347,6 +347,8 @@ export interface OrderStatusHistoryResponse {
 export interface OrderResponse {
   order_id: number;
   customer_id: number;
+  customer_name?: string | null;
+  customer_email?: string | null;
   status: OrderStatus;
   fulfillment_type: FulfillmentType;
   delivery_address: string | null;
@@ -388,6 +390,8 @@ export const PrescriptionStatus = {
 export interface PrescriptionResponse {
   prescription_id: number;
   customer_id: number;
+  customer_name?: string | null;
+  customer_email?: string | null;
   file_url: string;
   status: PrescriptionStatus;
   reviewed_by: number | null;
@@ -399,6 +403,20 @@ export interface PrescriptionResponse {
 export interface PrescriptionReviewRequest {
   approve: boolean;
   reason?: string | null;
+}
+
+export interface ReceivingActivityResponse {
+  batch_id: number;
+  medicine_id: number;
+  medicine_name: string;
+  supplier_id: number;
+  quantity_received: number;
+  quantity_remaining: number;
+  expiry_date: string;
+  barcode: string | null;
+  received_at: string;
+  received_by: number | null;
+  received_by_name: string | null;
 }
 
 export interface RefreshRequest {
@@ -6159,7 +6177,7 @@ export const listReceivingActivityBatchesReceivingActivityGet = (
   params?: ListReceivingActivityBatchesReceivingActivityGetParams,
   signal?: AbortSignal,
 ) => {
-  return apiMutator<BatchResponse[]>({
+  return apiMutator<ReceivingActivityResponse[]>({
     url: `/batches/receiving-activity`,
     method: "GET",
     params,

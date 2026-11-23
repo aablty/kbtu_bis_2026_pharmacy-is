@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { PackageCheckIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   adminEndpoints,
@@ -8,11 +9,14 @@ import {
   type Medicine,
 } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
+import { ButtonGroup } from "@/shared/ui/button-group";
+import { Field, FieldGroup, FieldLabel } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
 import { QrCode } from "@/shared/ui/qr-code";
 import { WriteOffDialog } from "./write-off-dialog";
+
+const QUANTITY_STEPS = [-10, -1, 1, 10] as const;
 
 export function StockPanel() {
   const { t } = useTranslation();
@@ -23,6 +27,13 @@ export function StockPanel() {
   const [quantity, setQuantity] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [received, setReceived] = useState<Batch | null>(null);
+  const quantityRef = useRef<HTMLInputElement>(null);
+
+  // Guided flow: once a medicine is confirmed, move the operator straight
+  // into the receiving details instead of leaving them to find the field.
+  useEffect(() => {
+    if (medicine) quantityRef.current?.focus();
+  }, [medicine]);
 
   const suppliers = useQuery({
     queryKey: ["admin-suppliers"],
@@ -62,6 +73,11 @@ export function StockPanel() {
     });
   }
 
+  function adjustQuantity(delta: number) {
+    const next = Math.max(1, (Number(quantity) || 0) + delta);
+    setQuantity(String(next));
+  }
+
   if (received) {
     return (
       <div className="flex max-w-md flex-col gap-4">
@@ -88,52 +104,56 @@ export function StockPanel() {
   }
 
   return (
-    <div className="flex max-w-md flex-col gap-4">
+    <div className="flex max-w-md flex-col gap-6">
       <WriteOffDialog />
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="stock-medicine-search">
-          {t("staff.stock.searchMedicine")}
-        </Label>
-        <Input
-          id="stock-medicine-search"
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setQuery(e.target.value.trim());
-          }}
-          placeholder={t("staff.stock.searchMedicine")}
-        />
-        {query.length >= 2 && results.data?.items.length ? (
-          <ul className="flex flex-col divide-y rounded-xl border">
-            {results.data.items.map((m) => (
-              <li key={m.medicine_id}>
-                <button
-                  type="button"
-                  className="w-full p-2 text-left text-sm hover:bg-accent"
-                  onClick={() => {
-                    setMedicine(m);
-                    setSearch("");
-                    setQuery("");
-                  }}
-                >
-                  {m.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm text-muted-foreground">
-          {t("staff.stock.selectedMedicine")}
-        </span>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="stock-medicine-search">
+            {t("staff.stock.step1")}
+          </FieldLabel>
+          <Input
+            id="stock-medicine-search"
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setQuery(e.target.value.trim());
+            }}
+            placeholder={t("staff.stock.searchMedicine")}
+          />
+          {query.length >= 2 && results.data?.items.length ? (
+            <ul className="flex flex-col divide-y rounded-xl border">
+              {results.data.items.map((m) => (
+                <li key={m.medicine_id}>
+                  <button
+                    type="button"
+                    className="w-full p-2 text-left text-sm hover:bg-accent"
+                    onClick={() => {
+                      setMedicine(m);
+                      setSearch("");
+                      setQuery("");
+                    }}
+                  >
+                    {m.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Field>
+
         {medicine ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl border p-2 text-sm">
-            <span className="min-w-0 truncate font-medium">
-              {medicine.name}
-            </span>
+          <div className="flex items-center gap-3 rounded-2xl border bg-muted/30 p-4">
+            <PackageCheckIcon className="size-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{medicine.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("staff.stock.currentStock", {
+                  count: medicine.stock_quantity,
+                })}
+              </p>
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -148,58 +168,98 @@ export function StockPanel() {
             {t("staff.stock.noneSelected")}
           </p>
         )}
-      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="stock-supplier">{t("staff.stock.supplier")}</Label>
-        <NativeSelect
-          id="stock-supplier"
-          value={supplierId}
-          onChange={(e) => setSupplierId(e.target.value)}
-        >
-          <NativeSelectOption value="">{t("admin.none")}</NativeSelectOption>
-          {(suppliers.data ?? []).map((s) => (
-            <NativeSelectOption
-              key={s.supplier_id}
-              value={String(s.supplier_id)}
-            >
-              {s.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </div>
+        {medicine ? (
+          <>
+            <p className="text-sm font-medium">{t("staff.stock.step2")}</p>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="stock-quantity">{t("staff.stock.quantity")}</Label>
-        <Input
-          id="stock-quantity"
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-      </div>
+            <Field>
+              <FieldLabel htmlFor="stock-supplier">
+                {t("staff.stock.supplier")}
+              </FieldLabel>
+              <NativeSelect
+                id="stock-supplier"
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+              >
+                <NativeSelectOption value="">
+                  {t("admin.none")}
+                </NativeSelectOption>
+                {(suppliers.data ?? []).map((s) => (
+                  <NativeSelectOption
+                    key={s.supplier_id}
+                    value={String(s.supplier_id)}
+                  >
+                    {s.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="stock-expiry">{t("staff.stock.expiryDate")}</Label>
-        <Input
-          id="stock-expiry"
-          type="date"
-          value={expiryDate}
-          onChange={(e) => setExpiryDate(e.target.value)}
-        />
-      </div>
+            <Field>
+              <FieldLabel htmlFor="stock-quantity">
+                {t("staff.stock.quantity")}
+              </FieldLabel>
+              <ButtonGroup>
+                {QUANTITY_STEPS.slice(0, 2).map((step) => (
+                  <Button
+                    key={step}
+                    type="button"
+                    variant="outline"
+                    aria-label={t("staff.stock.quantityAdjust", { step })}
+                    onClick={() => adjustQuantity(step)}
+                  >
+                    {step}
+                  </Button>
+                ))}
+                <Input
+                  id="stock-quantity"
+                  ref={quantityRef}
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="text-center"
+                />
+                {QUANTITY_STEPS.slice(2).map((step) => (
+                  <Button
+                    key={step}
+                    type="button"
+                    variant="outline"
+                    aria-label={t("staff.stock.quantityAdjust", { step })}
+                    onClick={() => adjustQuantity(step)}
+                  >
+                    +{step}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </Field>
 
-      <Button disabled={!valid || receive.isPending} onClick={submit}>
-        {receive.isPending
-          ? t("staff.stock.receiving")
-          : t("staff.stock.submit")}
-      </Button>
-      {receive.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {t("staff.errors.generic")}
-        </p>
-      ) : null}
+            <Field>
+              <FieldLabel htmlFor="stock-expiry">
+                {t("staff.stock.expiryDate")}
+              </FieldLabel>
+              <Input
+                id="stock-expiry"
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+              />
+            </Field>
+
+            <Button disabled={!valid || receive.isPending} onClick={submit}>
+              {receive.isPending
+                ? t("staff.stock.receiving")
+                : t("staff.stock.submit")}
+            </Button>
+            {receive.isError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {t("staff.errors.generic")}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </FieldGroup>
     </div>
   );
 }

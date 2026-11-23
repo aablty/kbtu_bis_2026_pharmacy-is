@@ -3,16 +3,24 @@ import {
   BarChart3Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ClipboardCheckIcon,
   ClipboardListIcon,
   FolderTreeIcon,
+  MinusCircleIcon,
   PillIcon,
+  PlusIcon,
   SearchIcon,
   Trash2Icon,
   TruckIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatPrice } from "@/features/browse-catalog";
+import {
+  buildCategoryTree,
+  type CategoryNode,
+  categoryLabel,
+  formatPrice,
+} from "@/features/browse-catalog";
 import {
   adminEndpoints,
   type Category,
@@ -27,10 +35,17 @@ import type { DosageForm } from "@/shared/api/catalog-types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { AppShell } from "@/widgets/layout";
 import { AnalyticsPanel } from "./analytics-panel";
-import { CrudPanel, type FieldDef, type Values } from "./crud-panel";
+import {
+  type CrudColumn,
+  CrudPanel,
+  type FieldDef,
+  type Values,
+} from "./crud-panel";
 import { ReceivingActivityPanel } from "./receiving-activity-panel";
 import { WastagePanel } from "./wastage-panel";
 
@@ -180,13 +195,19 @@ function SuppliersTab() {
     { name: "contact_phone", type: "text" },
     { name: "address", type: "text" },
   ];
+  // Flat, low-cardinality data (name/phone/address) with no hierarchy - a
+  // table already suits it; only sorting on name is worth adding here.
   return (
     <CrudPanel<Supplier>
       entity="suppliers"
       items={suppliers.data}
       idOf={(s) => s.supplier_id}
       columns={[
-        { header: t("admin.fields.name"), cell: (s) => s.name },
+        {
+          header: t("admin.fields.name"),
+          cell: (s) => s.name,
+          sortValue: (s) => s.name.toLowerCase(),
+        },
         {
           header: t("admin.fields.contact_phone"),
           cell: (s) => str(s.contact_phone),
@@ -215,6 +236,60 @@ function SuppliersTab() {
   );
 }
 
+/** Recursive, editable rendering of the category tree (admin only - the
+ * customer-facing CategoryTreeNav is a read-only nav, not an edit surface). */
+function CategoryTree({
+  nodes,
+  depth = 0,
+  renderActions,
+  onAddChild,
+}: {
+  nodes: CategoryNode[];
+  depth?: number;
+  renderActions: (node: Category) => ReactNode;
+  onAddChild: (parentId: number) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  if (nodes.length === 0) return null;
+  return (
+    <ul
+      className={
+        depth > 0
+          ? "ml-5 flex flex-col gap-1.5 border-l pl-3"
+          : "flex flex-col gap-1.5"
+      }
+    >
+      {nodes.map((node) => (
+        <li key={node.category_id} className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 rounded-xl border p-2.5">
+            <span className="min-w-0 truncate text-sm font-medium">
+              {categoryLabel(node, i18n.language)}
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("admin.addChild")}
+                title={t("admin.addChild")}
+                onClick={() => onAddChild(node.category_id)}
+              >
+                <PlusIcon />
+              </Button>
+              {renderActions(node)}
+            </div>
+          </div>
+          <CategoryTree
+            nodes={node.children}
+            depth={depth + 1}
+            renderActions={renderActions}
+            onAddChild={onAddChild}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function CategoriesTab() {
   const { t } = useTranslation();
   const categories = useQuery({
@@ -222,8 +297,6 @@ function CategoriesTab() {
     queryFn: catalogEndpoints.categories,
   });
   const all = categories.data ?? [];
-  const nameOf = (id: number | null) =>
-    all.find((c) => c.category_id === id)?.name ?? "—";
   const fields: FieldDef[] = [
     { name: "name", type: "text", required: true },
     {
@@ -235,15 +308,15 @@ function CategoriesTab() {
       })),
     },
   ];
+  const columns: CrudColumn<Category>[] = [
+    { header: t("admin.fields.name"), cell: (c) => c.name },
+  ];
   return (
     <CrudPanel<Category>
       entity="categories"
       items={all}
       idOf={(c) => c.category_id}
-      columns={[
-        { header: t("admin.fields.name"), cell: (c) => c.name },
-        { header: t("admin.fields.parent"), cell: (c) => nameOf(c.parent_id) },
-      ]}
+      columns={columns}
       fields={fields}
       toValues={(c) => ({
         name: c.name,
@@ -260,21 +333,37 @@ function CategoriesTab() {
       }}
       remove={adminEndpoints.categories.remove}
       queryKey={["categories"]}
+      body={({ items, actions, openNew }) => (
+        <CategoryTree
+          nodes={buildCategoryTree(items)}
+          renderActions={actions}
+          onAddChild={(parentId) => openNew({ parent_id: String(parentId) })}
+        />
+      )}
     />
   );
 }
+
+type StockFilter = "all" | "low" | "out";
+type RxFilter = "all" | "true" | "false";
 
 function MedicinesTab() {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [rxFilter, setRxFilter] = useState<RxFilter>("all");
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
 
   const medicines = useQuery({
-    queryKey: ["admin-medicines", query, page],
+    queryKey: ["admin-medicines", query, page, categoryFilter, rxFilter],
     queryFn: () =>
       catalogEndpoints.medicines({
         q: query || undefined,
+        category_id: categoryFilter ? Number(categoryFilter) : undefined,
+        requires_prescription:
+          rxFilter === "all" ? undefined : rxFilter === "true",
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       }),
@@ -301,6 +390,18 @@ function MedicinesTab() {
 
   const total = medicines.data?.total ?? 0;
   const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+
+  // shortcut: stock filter runs client-side on the current page only (the
+  // server has no low/out-of-stock query param); fine at this page size,
+  // revisit if the catalog grows past a page per filter.
+  const items =
+    stockFilter === "all"
+      ? medicines.data?.items
+      : medicines.data?.items.filter((m) =>
+          stockFilter === "out"
+            ? m.stock_quantity === 0
+            : m.stock_quantity > 0 && m.stock_quantity <= m.reorder_threshold,
+        );
 
   const fields: FieldDef[] = [
     { name: "name", type: "text", required: true },
@@ -339,17 +440,37 @@ function MedicinesTab() {
   return (
     <CrudPanel<Medicine>
       entity="medicines"
-      items={medicines.data?.items}
+      items={items}
       idOf={(m) => m.medicine_id}
       columns={[
-        { header: t("admin.fields.name"), cell: (m) => m.name },
+        {
+          header: t("admin.fields.name"),
+          // Truncated with a tooltip rather than wrapped: every other column
+          // in this row is single-line, so wrapping only the name would make
+          // rows with long names taller than the rest - truncation keeps a
+          // uniform row height across the table.
+          cell: (m) => (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focusable on purpose, so the tooltip with the full name reaches keyboard users too */}
+                <span tabIndex={0} className="block max-w-48 truncate">
+                  {m.name}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{m.name}</TooltipContent>
+            </Tooltip>
+          ),
+          sortValue: (m) => m.name.toLowerCase(),
+        },
         {
           header: t("admin.fields.price"),
           cell: (m) => formatPrice(m.price, i18n.language),
+          sortValue: (m) => Number(m.price),
         },
         {
           header: t("admin.fields.stock_quantity"),
           cell: (m) => m.stock_quantity,
+          sortValue: (m) => m.stock_quantity,
         },
         {
           header: t("admin.fields.category"),
@@ -360,11 +481,19 @@ function MedicinesTab() {
           cell: (m) => supplierName(m.supplier_id),
         },
         {
-          header: t("admin.fields.rx"),
+          header: t("medicine.prescription"),
           cell: (m) =>
             m.requires_prescription ? (
-              <Badge variant="outline">Rx</Badge>
-            ) : null,
+              <Badge variant="outline" className="gap-1">
+                <ClipboardCheckIcon className="size-3" />
+                {t("catalog.requiresPrescription")}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="gap-1">
+                <MinusCircleIcon className="size-3" />
+                {t("medicine.noPrescription")}
+              </Badge>
+            ),
         },
       ]}
       fields={fields}
@@ -398,31 +527,86 @@ function MedicinesTab() {
       remove={adminEndpoints.medicines.remove}
       queryKey={["admin-medicines"]}
       toolbar={
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPage(0);
-            setQuery(search.trim());
-          }}
-          className="flex w-full gap-2 sm:w-auto"
-        >
-          <Input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("catalog.search")}
-            aria-label={t("catalog.search")}
-            className="w-full sm:w-64"
-          />
-          <Button
-            type="submit"
-            variant="outline"
-            size="icon"
-            aria-label={t("catalog.searchSubmit")}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setPage(0);
+              setQuery(search.trim());
+            }}
+            className="flex w-full gap-2 sm:w-auto"
           >
-            <SearchIcon />
-          </Button>
-        </form>
+            <Input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("catalog.search")}
+              aria-label={t("catalog.search")}
+              className="w-full sm:w-64"
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              size="icon"
+              aria-label={t("catalog.searchSubmit")}
+            >
+              <SearchIcon />
+            </Button>
+          </form>
+          <NativeSelect
+            aria-label={t("admin.fields.category")}
+            value={categoryFilter}
+            onChange={(e) => {
+              setPage(0);
+              setCategoryFilter(e.target.value);
+            }}
+          >
+            <NativeSelectOption value="">
+              {t("catalog.allCategories")}
+            </NativeSelectOption>
+            {leaves.map((c) => (
+              <NativeSelectOption
+                key={c.category_id}
+                value={String(c.category_id)}
+              >
+                {c.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+          <NativeSelect
+            aria-label={t("medicine.prescription")}
+            value={rxFilter}
+            onChange={(e) => {
+              setPage(0);
+              setRxFilter(e.target.value as RxFilter);
+            }}
+          >
+            <NativeSelectOption value="all">
+              {t("staff.prescriptions.all")}
+            </NativeSelectOption>
+            <NativeSelectOption value="true">
+              {t("catalog.requiresPrescription")}
+            </NativeSelectOption>
+            <NativeSelectOption value="false">
+              {t("catalog.otcOnly")}
+            </NativeSelectOption>
+          </NativeSelect>
+          <NativeSelect
+            aria-label={t("admin.fields.stock_quantity")}
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+          >
+            <NativeSelectOption value="all">
+              {t("staff.prescriptions.all")}
+            </NativeSelectOption>
+            <NativeSelectOption value="low">
+              {t("analytics.level.low")}
+            </NativeSelectOption>
+            <NativeSelectOption value="out">
+              {t("analytics.level.out")}
+            </NativeSelectOption>
+          </NativeSelect>
+        </div>
       }
       footer={
         total > PAGE_SIZE ? (

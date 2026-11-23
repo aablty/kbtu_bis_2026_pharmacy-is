@@ -1,7 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createColumnHelper,
+  createSortedRowModel,
+  type Header,
+  type RowData,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import { isAxiosError } from "axios";
-import { InboxIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  InboxIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -45,11 +62,27 @@ export interface FieldDef {
   options?: { value: string; label: string }[];
 }
 
-export interface CrudPanelProps<T> {
+export interface CrudColumn<T extends RowData> {
+  header: string;
+  cell: (item: T) => ReactNode;
+  /** Enables column sorting (TanStack Table) by extracting a comparable value. */
+  sortValue?: (item: T) => string | number;
+}
+
+/** Context passed to a custom `body` renderer, replacing the default table/cards. */
+export interface CrudBodyContext<T extends RowData> {
+  items: T[];
+  actions: (item: T) => ReactNode;
+  openNew: (overrides?: Values) => void;
+  openEdit: (item: T) => void;
+  requestDelete: (item: T) => void;
+}
+
+export interface CrudPanelProps<T extends RowData> {
   entity: string; // i18n prefix under "admin.entities"
   items: T[] | undefined;
   idOf: (item: T) => number;
-  columns: { header: string; cell: (item: T) => ReactNode }[];
+  columns: CrudColumn<T>[];
   fields: FieldDef[];
   toValues: (item: T) => Values;
   save: (id: number | null, values: Values) => Promise<unknown>;
@@ -57,6 +90,8 @@ export interface CrudPanelProps<T> {
   queryKey: unknown[];
   toolbar?: ReactNode;
   footer?: ReactNode;
+  /** Replaces the default table (desktop)/card (mobile) list, e.g. for a tree view. */
+  body?: (ctx: CrudBodyContext<T>) => ReactNode;
 }
 
 const EMPTY_VALUES = (fields: FieldDef[]): Values =>
@@ -64,7 +99,55 @@ const EMPTY_VALUES = (fields: FieldDef[]): Values =>
     fields.map((f) => [f.name, f.type === "bool" ? "false" : ""]),
   );
 
-export function CrudPanel<T>({
+// One headless sort implementation shared by every admin/staff CRUD table (see
+// .agents/frontend/CLAUDE.md's "Data layer" section).
+const sortingFeatures = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: {},
+});
+const EMPTY_ITEMS: readonly never[] = [];
+
+function sortIndicator(sorted: false | "asc" | "desc") {
+  if (sorted === "asc") return ArrowUpIcon;
+  if (sorted === "desc") return ArrowDownIcon;
+  return ArrowUpDownIcon;
+}
+
+function headerLabel(header: unknown): string {
+  return typeof header === "string" ? header : "";
+}
+
+/** A column header that's also a sort toggle, when the column is sortable. */
+function SortableHeader<T extends RowData>({
+  header,
+}: {
+  header: Header<typeof sortingFeatures, T>;
+}) {
+  const label = headerLabel(header.column.columnDef.header);
+  if (!header.column.getCanSort()) return label;
+  const Icon = sortIndicator(header.column.getIsSorted());
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="-ml-3 h-7 gap-1 px-2 font-medium"
+      onClick={header.column.getToggleSortingHandler()}
+    >
+      {label}
+      <Icon
+        className={
+          header.column.getIsSorted()
+            ? "size-3.5"
+            : "size-3.5 text-muted-foreground"
+        }
+      />
+    </Button>
+  );
+}
+
+export function CrudPanel<T extends RowData>({
   entity,
   items,
   idOf,
@@ -76,6 +159,7 @@ export function CrudPanel<T>({
   queryKey,
   toolbar,
   footer,
+  body,
 }: CrudPanelProps<T>) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -85,6 +169,36 @@ export function CrudPanel<T>({
   } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<T | null>(null);
+
+  const columnHelper = useMemo(
+    () => createColumnHelper<typeof sortingFeatures, T>(),
+    [],
+  );
+  const tableColumns = useMemo(
+    () =>
+      columns.map((c, i) =>
+        columnHelper.display({
+          id: `col-${i}`,
+          header: c.header,
+          enableSorting: !!c.sortValue,
+          sortFn: c.sortValue
+            ? (rowA, rowB) => {
+                const a = c.sortValue?.(rowA.original);
+                const b = c.sortValue?.(rowB.original);
+                if (a === undefined || b === undefined) return 0;
+                return a < b ? -1 : a > b ? 1 : 0;
+              }
+            : undefined,
+        }),
+      ),
+    [columns, columnHelper],
+  );
+  const table = useTable({
+    features: sortingFeatures,
+    columns: tableColumns,
+    data: (items ?? EMPTY_ITEMS) as T[],
+  });
+  const rows = table.getRowModel().rows;
 
   const saveMutation = useMutation({
     mutationFn: (vars: { id: number | null; values: Values }) =>
@@ -105,12 +219,12 @@ export function CrudPanel<T>({
     onError: (error) => toast.error(errorText(error)),
   });
 
-  function open(item: T | null) {
+  function open(item: T | null, overrides?: Values) {
     setFormError(null);
     setEditing(
       item
         ? { id: idOf(item), values: toValues(item) }
-        : { id: null, values: EMPTY_VALUES(fields) },
+        : { id: null, values: { ...EMPTY_VALUES(fields), ...overrides } },
     );
   }
 
@@ -185,58 +299,85 @@ export function CrudPanel<T>({
           </Button>
         </ListEmpty>
       ) : null}
-      <div className={items?.length ? "hidden md:block" : "hidden"}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((c) => (
-                <TableHead key={c.header}>{c.header}</TableHead>
-              ))}
-              <TableHead className="text-right">
-                {t("staff.orders.actions")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items?.map((item) => (
-              <TableRow key={idOf(item)}>
-                {columns.map((c) => (
-                  <TableCell key={c.header}>{c.cell(item)}</TableCell>
-                ))}
-                <TableCell>
-                  <div className="flex justify-end gap-1">{actions(item)}</div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <ul className="flex flex-col gap-3 md:hidden">
-        {items?.map((item) => (
-          <li
-            key={idOf(item)}
-            className="flex flex-col gap-3 rounded-2xl border p-4"
-          >
-            <p className="text-sm font-medium break-words">
-              {columns[0]?.cell(item)}
-            </p>
-            <dl className="flex flex-col gap-1.5 text-sm">
-              {columns.slice(1).map((c) => (
-                <div key={c.header} className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">{c.header}</dt>
-                  <dd className="min-w-0 text-right break-words">
-                    {c.cell(item)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="flex justify-end gap-1 border-t pt-3">
-              {actions(item)}
+      {items && items.length > 0 ? (
+        body ? (
+          body({
+            items,
+            actions,
+            openNew: (overrides) => open(null, overrides),
+            openEdit: open,
+            requestDelete: setDeleting,
+          })
+        ) : (
+          <>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {table.getHeaderGroups()[0]?.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        <SortableHeader header={header} />
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-right">
+                      {t("staff.orders.actions")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => {
+                    const item = row.original;
+                    return (
+                      <TableRow key={idOf(item)}>
+                        {columns.map((c) => (
+                          <TableCell key={c.header}>{c.cell(item)}</TableCell>
+                        ))}
+                        <TableCell>
+                          <div className="flex justify-end gap-1">
+                            {actions(item)}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          </li>
-        ))}
-      </ul>
+
+            <ul className="flex flex-col gap-3 md:hidden">
+              {rows.map((row) => {
+                const item = row.original;
+                return (
+                  <li
+                    key={idOf(item)}
+                    className="flex flex-col gap-3 rounded-2xl border p-4"
+                  >
+                    <p className="text-sm font-medium break-words">
+                      {columns[0]?.cell(item)}
+                    </p>
+                    <dl className="flex flex-col gap-1.5 text-sm">
+                      {columns.slice(1).map((c) => (
+                        <div
+                          key={c.header}
+                          className="flex justify-between gap-3"
+                        >
+                          <dt className="text-muted-foreground">{c.header}</dt>
+                          <dd className="min-w-0 text-right break-words">
+                            {c.cell(item)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <div className="flex justify-end gap-1 border-t pt-3">
+                      {actions(item)}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )
+      ) : null}
       {footer}
 
       <Dialog

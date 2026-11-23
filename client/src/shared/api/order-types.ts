@@ -41,6 +41,8 @@ export interface OrderStatusHistory {
 export interface Order {
   order_id: number;
   customer_id: number;
+  customer_name: string | null;
+  customer_email: string | null;
   status: OrderStatus;
   fulfillment_type: FulfillmentType;
   delivery_address: string | null;

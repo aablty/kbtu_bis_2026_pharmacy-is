@@ -37,6 +37,7 @@ export type {
 // hand-written endpoint files above.
 export {
   getByBarcodeBatchesByBarcodeBarcodeGet,
+  getSaleSalesSaleIdGet,
   useListReceivingActivityBatchesReceivingActivityGet,
   useWastageAnalyticsWastageGet,
   useWriteOffBatchBatchesBatchIdWriteOffPost,

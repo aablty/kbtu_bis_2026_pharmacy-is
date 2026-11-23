@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models.medicine import Medicine
 from src.models.stock_batch import BatchWriteOff, OrderItemBatch, StockBatch
 from src.models.supplier import Supplier
 from src.models.user import User
@@ -141,10 +142,11 @@ class BatchRepository:
 
     async def list_recent(
         self, received_by: int | None, limit: int
-    ) -> list[tuple[StockBatch, str | None]]:
+    ) -> list[tuple[StockBatch, str | None, str]]:
         stmt = (
-            select(StockBatch, User.full_name, User.email)
+            select(StockBatch, User.full_name, User.email, Medicine.name)
             .outerjoin(User, User.user_id == StockBatch.received_by)
+            .join(Medicine, Medicine.medicine_id == StockBatch.medicine_id)
             .order_by(StockBatch.received_at.desc())
             .limit(limit)
         )
@@ -152,8 +154,12 @@ class BatchRepository:
             stmt = stmt.where(StockBatch.received_by == received_by)
         result = await self._session.execute(stmt)
         return [
-            (batch, full_name or email if batch.received_by is not None else None)
-            for batch, full_name, email in result
+            (
+                batch,
+                (full_name or email) if batch.received_by is not None else None,
+                medicine_name,
+            )
+            for batch, full_name, email, medicine_name in result
         ]
 
     async def create_write_off(

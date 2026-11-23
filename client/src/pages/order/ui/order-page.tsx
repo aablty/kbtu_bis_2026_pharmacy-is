@@ -3,11 +3,10 @@ import { ArrowLeftIcon, CheckCircle2Icon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router";
 import { formatPrice } from "@/features/browse-catalog";
+import { OrderItemsList, OrderStatusTimeline } from "@/features/order-details";
 import { orderEndpoints } from "@/shared/api";
-import { formatDateTime } from "@/shared/lib/format-date";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { QrCode } from "@/shared/ui/qr-code";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { AppShell } from "@/widgets/layout";
 
@@ -81,67 +80,7 @@ export function OrderPage() {
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <ul className="flex flex-col divide-y">
-              {data.items.map((item) => (
-                <li
-                  key={item.order_item_id}
-                  className="flex flex-col gap-2 py-2 text-sm"
-                >
-                  <div className="flex justify-between gap-4">
-                    <span className="min-w-0">
-                      {item.medicine_name}
-                      <span className="text-muted-foreground">
-                        {" "}
-                        × {item.quantity}
-                      </span>
-                    </span>
-                    <span className="shrink-0 tabular-nums">
-                      {formatPrice(
-                        String(Number(item.unit_price) * item.quantity),
-                        i18n.language,
-                      )}
-                    </span>
-                  </div>
-                  {item.batches && item.batches.length > 0 ? (
-                    <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {t("order.batches.title")}
-                      </p>
-                      <ul className="flex flex-col gap-3">
-                        {item.batches.map((batch) => (
-                          <li
-                            key={batch.batch_id}
-                            className="flex flex-wrap items-center gap-3"
-                          >
-                            {batch.barcode ? (
-                              <QrCode barcode={batch.barcode} size={72} />
-                            ) : null}
-                            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-                              <dt className="text-muted-foreground">
-                                {t("order.batches.quantity")}
-                              </dt>
-                              <dd>{batch.quantity}</dd>
-                              <dt className="text-muted-foreground">
-                                {t("order.batches.supplier")}
-                              </dt>
-                              <dd>{batch.supplier_name}</dd>
-                              <dt className="text-muted-foreground">
-                                {t("order.batches.expiry")}
-                              </dt>
-                              <dd>
-                                {new Date(batch.expiry_date).toLocaleDateString(
-                                  i18n.language,
-                                )}
-                              </dd>
-                            </dl>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <OrderItemsList items={data.items} />
             <div className="flex items-baseline justify-between border-t pt-3">
               <span className="text-sm text-muted-foreground">
                 {t("order.total")}
@@ -152,41 +91,7 @@ export function OrderPage() {
             </div>
             <section className="flex flex-col gap-2 border-t pt-4">
               <h2 className="text-sm font-medium">{t("order.tracking")}</h2>
-              <ol>
-                {data.history.map((entry, i) => {
-                  const current = i === data.history.length - 1;
-                  return (
-                    <li
-                      key={`${entry.status}-${entry.changed_at}`}
-                      className="flex gap-3"
-                    >
-                      <div className="flex flex-col items-center">
-                        <span
-                          className={`mt-1 size-2.5 rounded-full ${current ? "bg-primary ring-4 ring-primary/20" : "bg-muted-foreground/40"}`}
-                        />
-                        {current ? null : (
-                          <span className="w-px flex-1 bg-border" />
-                        )}
-                      </div>
-                      <div className="pb-4 text-sm">
-                        <p
-                          className={
-                            current ? "font-medium" : "text-muted-foreground"
-                          }
-                        >
-                          {t(`order.status.${entry.status}`)}
-                        </p>
-                        <time
-                          dateTime={entry.changed_at}
-                          className="text-xs text-muted-foreground"
-                        >
-                          {formatDateTime(entry.changed_at, i18n.language)}
-                        </time>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
+              <OrderStatusTimeline history={data.history} />
             </section>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <dt className="text-muted-foreground">

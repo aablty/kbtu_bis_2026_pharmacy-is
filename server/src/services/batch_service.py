@@ -46,7 +46,7 @@ class BatchService:
 
     async def list_recent(
         self, received_by: int | None, limit: int
-    ) -> list[tuple[StockBatch, str | None]]:
+    ) -> list[tuple[StockBatch, str | None, str]]:
         return await self._batches.list_recent(received_by, limit)
 
     async def write_off(

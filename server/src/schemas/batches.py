@@ -32,6 +32,22 @@ class BatchResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ReceivingActivityResponse(BaseModel):
+    batch_id: int
+    medicine_id: int
+    medicine_name: str
+    supplier_id: int
+    quantity_received: int
+    quantity_remaining: int
+    expiry_date: date
+    barcode: str | None
+    received_at: datetime
+    received_by: int | None
+    received_by_name: str | None
+
+    model_config = {"from_attributes": True}
+
+
 class BatchByBarcodeResponse(BaseModel):
     batch_id: int
     medicine_id: int

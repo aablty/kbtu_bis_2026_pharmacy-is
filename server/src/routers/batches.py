@@ -17,6 +17,7 @@ from src.schemas.batches import (
     BatchResponse,
     BatchWriteOffCreate,
     BatchWriteOffResponse,
+    ReceivingActivityResponse,
 )
 from src.services.batch_service import BatchService
 
@@ -69,16 +70,31 @@ async def receive_stock(
 
 @router.get(
     "/receiving-activity",
-    response_model=list[BatchResponse],
+    response_model=list[ReceivingActivityResponse],
     dependencies=[Depends(require_role(UserRole.ADMIN))],
 )
 async def list_receiving_activity(
     service: BatchServiceDep,
     received_by: int | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
-) -> list[BatchResponse]:
+) -> list[ReceivingActivityResponse]:
     rows = await service.list_recent(received_by, limit)
-    return [_to_batch_response(batch, name) for batch, name in rows]
+    return [
+        ReceivingActivityResponse(
+            batch_id=batch.batch_id,
+            medicine_id=batch.medicine_id,
+            medicine_name=medicine_name,
+            supplier_id=batch.supplier_id,
+            quantity_received=batch.quantity_received,
+            quantity_remaining=batch.quantity_remaining,
+            expiry_date=batch.expiry_date,
+            barcode=batch.barcode,
+            received_at=batch.received_at,
+            received_by=batch.received_by,
+            received_by_name=name,
+        )
+        for batch, name, medicine_name in rows
+    ]
 
 
 @router.post(

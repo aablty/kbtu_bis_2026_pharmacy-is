@@ -5,6 +5,9 @@ import {
   CheckCircle2Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PackageIcon,
+  TrendingUpIcon,
+  TrophyIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -95,29 +98,32 @@ export function AnalyticsPanel() {
         className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3"
       >
         <dl className="contents">
-          <div className="flex flex-col gap-1 bg-card p-4">
-            <dt className="text-xs text-muted-foreground">
+          <div className="flex flex-col gap-1.5 bg-card p-4 md:p-5">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <TrendingUpIcon className="size-3.5" />
               {t("analytics.totalRevenue")}
             </dt>
-            <dd className="text-lg font-semibold tabular-nums">
+            <dd className="text-2xl font-semibold tracking-tight tabular-nums">
               {revenue.data
                 ? formatPrice(revenue.data.total_revenue, i18n.language)
                 : "—"}
             </dd>
           </div>
-          <div className="flex flex-col gap-1 bg-card p-4">
-            <dt className="text-xs text-muted-foreground">
+          <div className="flex flex-col gap-1.5 bg-card p-4 md:p-5">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <PackageIcon className="size-3.5" />
               {t("analytics.lowStock")}
             </dt>
-            <dd className="text-lg font-semibold tabular-nums">
+            <dd className="text-2xl font-semibold tracking-tight tabular-nums">
               {lowStock.data?.length ?? "—"}
             </dd>
           </div>
-          <div className="col-span-2 flex min-w-0 flex-col gap-1 bg-card p-4 sm:col-span-1">
-            <dt className="text-xs text-muted-foreground">
+          <div className="col-span-2 flex min-w-0 flex-col gap-1.5 bg-card p-4 sm:col-span-1 md:p-5">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <TrophyIcon className="size-3.5" />
               {t("analytics.topSeller")}
             </dt>
-            <dd className="truncate text-sm font-medium">
+            <dd className="truncate text-lg font-semibold tracking-tight">
               {sellers[0]?.medicine_name ?? "—"}
             </dd>
           </div>
@@ -152,8 +158,22 @@ export function AnalyticsPanel() {
           </ToggleGroup>
         </div>
         <ChartContainer config={revenueConfig} className="h-52 w-full md:h-64">
-          <AreaChart data={series} margin={{ left: 0, right: 8 }}>
-            <CartesianGrid vertical={false} />
+          <AreaChart data={series} margin={{ top: 8, left: 0, right: 8 }}>
+            <defs>
+              <linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-revenue)"
+                  stopOpacity={0.35}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-revenue)"
+                  stopOpacity={0.02}
+                />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -161,20 +181,43 @@ export function AnalyticsPanel() {
               tickMargin={8}
               tickFormatter={(v: string) => v.slice(5)}
               minTickGap={24}
+              fontSize={12}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               width={44}
+              fontSize={12}
               tickFormatter={(v: number) => compact.format(v)}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(v) =>
+                    new Intl.DateTimeFormat(i18n.language, {
+                      dateStyle: "medium",
+                    }).format(new Date(`${v}T00:00:00`))
+                  }
+                  formatter={(value) => (
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <span className="text-muted-foreground">
+                        {t("analytics.totalRevenue")}
+                      </span>
+                      <span className="font-mono font-medium text-foreground tabular-nums">
+                        {formatPrice(String(value), i18n.language)}
+                      </span>
+                    </div>
+                  )}
+                />
+              }
+            />
             <Area
               dataKey="revenue"
               type="monotone"
               stroke="var(--color-revenue)"
-              fill="var(--color-revenue)"
-              fillOpacity={0.2}
+              strokeWidth={2}
+              fill="url(#revenue-fill)"
+              activeDot={{ r: 4 }}
             />
           </AreaChart>
         </ChartContainer>
