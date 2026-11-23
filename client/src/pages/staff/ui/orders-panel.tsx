@@ -321,7 +321,9 @@ export function OrdersPanel() {
               onClick={confirmPickup}
               disabled={code.trim().length !== 6 || update.isPending}
             >
-              {t("staff.orders.confirmPickup")}
+              {update.isPending
+                ? t("staff.orders.completingPickup")
+                : t("staff.orders.confirmPickup")}
             </Button>
           </DialogFooter>
         </DialogContent>

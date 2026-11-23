@@ -299,7 +299,9 @@ export function PrescriptionsPanel() {
               onClick={confirmReject}
               disabled={!reason.trim() || review.isPending}
             >
-              {t("staff.prescriptions.reject")}
+              {review.isPending
+                ? t("staff.prescriptions.rejecting")
+                : t("staff.prescriptions.reject")}
             </Button>
           </DialogFooter>
         </DialogContent>

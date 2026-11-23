@@ -3,9 +3,11 @@ import {
   BarChart3Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ClipboardListIcon,
   FolderTreeIcon,
   PillIcon,
   SearchIcon,
+  Trash2Icon,
   TruckIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -29,6 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { AppShell } from "@/widgets/layout";
 import { AnalyticsPanel } from "./analytics-panel";
 import { CrudPanel, type FieldDef, type Values } from "./crud-panel";
+import { ReceivingActivityPanel } from "./receiving-activity-panel";
+import { WastagePanel } from "./wastage-panel";
 
 const PAGE_SIZE = 50;
 const DOSAGE_FORMS: DosageForm[] = [
@@ -119,6 +123,24 @@ export function AdminPage() {
               <TruckIcon />
               {t("admin.entities.suppliers")}
             </TabsTrigger>
+            <TabsTrigger
+              className="flex-none"
+              value="wastage"
+              aria-label={t("admin.entities.wastage")}
+              title={t("admin.entities.wastage")}
+            >
+              <Trash2Icon />
+              {t("admin.entities.wastage")}
+            </TabsTrigger>
+            <TabsTrigger
+              className="flex-none"
+              value="receiving"
+              aria-label={t("admin.entities.receiving")}
+              title={t("admin.entities.receiving")}
+            >
+              <ClipboardListIcon />
+              {t("admin.entities.receiving")}
+            </TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="analytics" className="mt-4 min-w-0">
@@ -132,6 +154,12 @@ export function AdminPage() {
         </TabsContent>
         <TabsContent value="suppliers" className="mt-4">
           <SuppliersTab />
+        </TabsContent>
+        <TabsContent value="wastage" className="mt-4 min-w-0">
+          <WastagePanel />
+        </TabsContent>
+        <TabsContent value="receiving" className="mt-4 min-w-0">
+          <ReceivingActivityPanel />
         </TabsContent>
       </Tabs>
     </AppShell>

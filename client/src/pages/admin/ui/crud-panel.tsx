@@ -3,6 +3,17 @@ import { isAxiosError } from "axios";
 import { InboxIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -73,6 +84,7 @@ export function CrudPanel<T>({
     values: Values;
   } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<T | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: (vars: { id: number | null; values: Values }) =>
@@ -86,8 +98,11 @@ export function CrudPanel<T>({
 
   const removeMutation = useMutation({
     mutationFn: (id: number) => remove(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
-    onError: (error) => window.alert(errorText(error)),
+    onSuccess: () => {
+      setDeleting(null);
+      void queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (error) => toast.error(errorText(error)),
   });
 
   function open(item: T | null) {
@@ -137,10 +152,7 @@ export function CrudPanel<T>({
           aria-label={t("admin.delete")}
           title={t("admin.delete")}
           disabled={removeMutation.isPending}
-          onClick={() => {
-            if (window.confirm(t("admin.confirmDelete")))
-              removeMutation.mutate(idOf(item));
-          }}
+          onClick={() => setDeleting(item)}
         >
           <Trash2Icon />
         </Button>
@@ -316,12 +328,40 @@ export function CrudPanel<T>({
                 type="submit"
                 disabled={missingRequired || saveMutation.isPending}
               >
-                {t("admin.save")}
+                {saveMutation.isPending ? t("admin.saving") : t("admin.save")}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.confirmDelete", {
+                name: deleting ? String(columns[0]?.cell(deleting) ?? "") : "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={removeMutation.isPending}
+              onClick={() => deleting && removeMutation.mutate(idOf(deleting))}
+            >
+              {removeMutation.isPending
+                ? t("admin.deleting")
+                : t("admin.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

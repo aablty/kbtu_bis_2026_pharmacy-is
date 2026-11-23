@@ -274,7 +274,13 @@
       "failed": "Failed",
       "refunded": "Refunded"
     },
-    "tracking": "Tracking"
+    "tracking": "Tracking",
+    "batches": {
+      "title": "Sourced from",
+      "quantity": "Quantity",
+      "supplier": "Supplier",
+      "expiry": "Expires"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -324,7 +330,8 @@
       "pickupTitle": "Confirm pickup",
       "pickupHint": "Ask the customer for the 6-digit code from their email.",
       "pickupCode": "Pickup code",
-      "confirmPickup": "Complete order"
+      "confirmPickup": "Complete order",
+      "completingPickup": "Completing…"
     },
     "prescriptions": {
       "filter": "Filter",
@@ -332,6 +339,7 @@
       "customer": "Customer",
       "approve": "Approve",
       "reject": "Reject",
+      "rejecting": "Rejecting…",
       "rejectTitle": "Reject prescription",
       "reason": "Reason for rejection"
     },
@@ -346,7 +354,11 @@
       "submit": "Record sale",
       "selling": "Recording…",
       "receipt": "Sale #{{id}} recorded · {{total}}",
-      "recent": "Recent sales"
+      "recent": "Recent sales",
+      "scan": "Scan barcode",
+      "scanStop": "Stop scanning",
+      "scanHint": "Point the camera at the batch's QR code.",
+      "scanError": "Couldn't read a batch from the camera. Try the search instead."
     },
     "stock": {
       "searchMedicine": "Search medicines",
@@ -359,7 +371,27 @@
       "submit": "Receive stock",
       "receiving": "Receiving…",
       "received": "Stock received. Batch barcode:",
-      "another": "Receive another batch"
+      "another": "Receive another batch",
+      "writeOff": {
+        "trigger": "Write off stock",
+        "title": "Write off stock",
+        "barcode": "Batch barcode",
+        "barcodePlaceholder": "Scan or type barcode",
+        "notFound": "No batch found for this barcode.",
+        "medicine": "Medicine",
+        "quantityRemaining": "Quantity remaining",
+        "quantity": "Quantity to write off",
+        "quantityError": "Enter a quantity up to the remaining amount.",
+        "reason": "Reason (optional)",
+        "submit": "Write off",
+        "submitting": "Writing off…",
+        "cancel": "Cancel",
+        "confirmTitle": "Write off stock?",
+        "confirmDescription": "This permanently removes {{quantity}} unit(s) of {{medicine}} from stock. This cannot be undone.",
+        "confirmAction": "Write off",
+        "success": "Stock written off.",
+        "error": "Could not write off this batch."
+      }
     },
     "errors": {
       "generic": "Something went wrong. Please try again.",
@@ -371,13 +403,32 @@
       "suppliers": "Suppliers",
       "categories": "Categories",
       "medicines": "Medicines",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "wastage": "Wastage",
+      "receiving": "Receiving activity"
+    },
+    "wastage": {
+      "totalQuantity": "Total units written off",
+      "totalValue": "Total value lost",
+      "empty": "No wastage in this period.",
+      "quantity": "Quantity",
+      "value": "Value"
+    },
+    "receiving": {
+      "empty": "No receiving activity yet.",
+      "quantityReceived": "Quantity received",
+      "receivedBy": "Received by",
+      "receivedAt": "Received at"
     },
     "add": "Add",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
-    "confirmDelete": "Delete this record?",
+    "saving": "Saving…",
+    "confirmDeleteTitle": "Delete record?",
+    "confirmDelete": "This permanently deletes \"{{name}}\". This cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
     "none": "—",
     "yes": "Yes",
     "no": "No",

@@ -10,7 +10,6 @@ export default defineConfig({
       target: "./src/shared/api/generated.ts",
       client: "react-query",
       httpClient: "axios",
-      baseUrl: "http://localhost:8000",
       override: {
         mutator: {
           path: "./src/shared/api/client.ts",

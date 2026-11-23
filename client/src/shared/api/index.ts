@@ -24,6 +24,23 @@ export { catalogEndpoints } from "./catalog-endpoints";
 export type { Category, Medicine, MedicineList } from "./catalog-types";
 export { apiClient, apiMutator } from "./client";
 export { type AuthErrorKey, authErrorKey } from "./errors";
+export type {
+  BatchByBarcodeResponse,
+  BatchResponse,
+  BatchWriteOffCreate,
+  BatchWriteOffResponse,
+  WastageItemResponse,
+  WastageReport,
+} from "./generated";
+// Orval-generated client (client/orval.config.ts) - the only source for
+// phase 1's new batch/wastage endpoints, not yet mirrored in the
+// hand-written endpoint files above.
+export {
+  getByBarcodeBatchesByBarcodeBarcodeGet,
+  useListReceivingActivityBatchesReceivingActivityGet,
+  useWastageAnalyticsWastageGet,
+  useWriteOffBatchBatchesBatchIdWriteOffPost,
+} from "./generated";
 export { notificationEndpoints } from "./notification-endpoints";
 export type { AppNotification, NotificationType } from "./notification-types";
 export { orderEndpoints } from "./order-endpoints";
@@ -32,6 +49,7 @@ export type {
   Order,
   OrderCreate,
   OrderItem,
+  OrderItemBatch,
   OrderStatus,
   OrderStatusHistory,
   PaymentMethod,

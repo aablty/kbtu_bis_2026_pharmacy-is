@@ -20,6 +20,7 @@ import {
   ChartTooltipContent,
 } from "@/shared/ui/chart";
 import { ListEmpty } from "@/shared/ui/list-empty";
+import { SkeletonList } from "@/shared/ui/skeleton-list";
 import {
   Table,
   TableBody,
@@ -184,7 +185,9 @@ export function AnalyticsPanel() {
           <h2 className="mb-4 text-sm font-semibold">
             {t("analytics.bestSellers")}
           </h2>
-          {bestSellers.data?.length === 0 ? (
+          {bestSellers.isPending ? (
+            <SkeletonList rows={3} label={t("catalog.loading")} />
+          ) : bestSellers.data?.length === 0 ? (
             <ListEmpty icon={BarChart3Icon} title={t("analytics.noData")} />
           ) : (
             <ol className="flex flex-col gap-3">
@@ -220,7 +223,9 @@ export function AnalyticsPanel() {
           <h2 className="mb-4 text-sm font-semibold">
             {t("analytics.lowStockList")}
           </h2>
-          {lowStock.data?.length === 0 ? (
+          {lowStock.isPending ? (
+            <SkeletonList rows={3} label={t("catalog.loading")} />
+          ) : lowStock.data?.length === 0 ? (
             <ListEmpty
               icon={CheckCircle2Icon}
               title={t("analytics.lowStockNone")}
@@ -289,7 +294,9 @@ export function AnalyticsPanel() {
         <h2 className="mb-4 text-sm font-semibold">
           {t("analytics.expiringBatches")}
         </h2>
-        {expiringBatches.data?.length === 0 ? (
+        {expiringBatches.isPending ? (
+          <SkeletonList rows={3} label={t("catalog.loading")} />
+        ) : expiringBatches.data?.length === 0 ? (
           <ListEmpty
             icon={CheckCircle2Icon}
             title={t("analytics.expiringBatchesNone")}

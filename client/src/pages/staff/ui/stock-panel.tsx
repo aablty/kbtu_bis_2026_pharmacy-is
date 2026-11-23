@@ -11,6 +11,8 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/shared/ui/native-select";
+import { QrCode } from "@/shared/ui/qr-code";
+import { WriteOffDialog } from "./write-off-dialog";
 
 export function StockPanel() {
   const { t } = useTranslation();
@@ -62,28 +64,32 @@ export function StockPanel() {
 
   if (received) {
     return (
-      <div className="flex max-w-md flex-col gap-4 rounded-2xl border p-4">
-        <p className="text-sm text-muted-foreground">
-          {t("staff.stock.received")}
-        </p>
-        <p className="font-mono text-xl font-semibold tracking-wide">
-          {received.barcode}
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setReceived(null);
-            receive.reset();
-          }}
-        >
-          {t("staff.stock.another")}
-        </Button>
+      <div className="flex max-w-md flex-col gap-4">
+        <div className="flex flex-col gap-4 rounded-2xl border p-4">
+          <p className="text-sm text-muted-foreground">
+            {t("staff.stock.received")}
+          </p>
+          {received.barcode ? (
+            <QrCode barcode={received.barcode} size={128} />
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={() => {
+              setReceived(null);
+              receive.reset();
+            }}
+          >
+            {t("staff.stock.another")}
+          </Button>
+        </div>
+        <WriteOffDialog />
       </div>
     );
   }
 
   return (
     <div className="flex max-w-md flex-col gap-4">
+      <WriteOffDialog />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="stock-medicine-search">
           {t("staff.stock.searchMedicine")}

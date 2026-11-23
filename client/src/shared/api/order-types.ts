@@ -1,3 +1,13 @@
+// OrderItemBatch/OrderItem mirror orval's generated OrderItemBatchResponse/
+// OrderItemResponse (client/src/shared/api/generated.ts) - reused here
+// instead of duplicated so a backend schema change can't silently drift.
+import type {
+  OrderItemResponse as OrderItem,
+  OrderItemBatchResponse as OrderItemBatch,
+} from "./generated";
+
+export type { OrderItem, OrderItemBatch };
+
 export type FulfillmentType = "pickup" | "delivery";
 export type PaymentMethod = "cash" | "card_simulated";
 export type OrderStatus =
@@ -14,13 +24,6 @@ export interface OrderCreate {
   delivery_address: string | null;
   payment_method: PaymentMethod;
   prescription_id: number | null;
-}
-
-export interface OrderItem {
-  medicine_id: number;
-  medicine_name: string;
-  quantity: number;
-  unit_price: string;
 }
 
 export interface Payment {

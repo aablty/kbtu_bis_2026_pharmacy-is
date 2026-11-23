@@ -1,10 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PlusIcon, ReceiptIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { BrowserQRCodeReader } from "@zxing/browser";
+import {
+  CameraIcon,
+  PlusIcon,
+  ReceiptIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/features/browse-catalog";
 import {
   catalogEndpoints,
+  getByBarcodeBatchesByBarcodeBarcodeGet,
   type Medicine,
   type Sale,
   staffEndpoints,
@@ -35,6 +43,9 @@ export function PosPanel() {
   const [customerId, setCustomerId] = useState("");
   const [receipt, setReceipt] = useState<Sale | null>(null);
   const [saleOpen, setSaleOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanError, setScanError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const recent = useQuery({
     queryKey: ["staff-sales"],
@@ -78,6 +89,38 @@ export function PosPanel() {
       );
     });
   }
+
+  // Scans a batch barcode via the device camera and adds the matching medicine to the sale.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: add is recreated every render; including it would restart the scanner mid-scan
+  useEffect(() => {
+    if (!scanOpen) return;
+    let cancelled = false;
+    const reader = new BrowserQRCodeReader();
+
+    reader
+      .decodeOnceFromVideoDevice(undefined, videoRef.current ?? undefined)
+      .then(async (result) => {
+        if (cancelled) return;
+        const barcode = result.getText();
+        const batch = await getByBarcodeBatchesByBarcodeBarcodeGet(barcode);
+        if (cancelled) return;
+        const medicine = await catalogEndpoints.medicine(batch.medicine_id);
+        if (cancelled) return;
+        add(medicine);
+        setScanOpen(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScanError(true);
+          setScanOpen(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      BrowserQRCodeReader.releaseAllStreams();
+    };
+  }, [scanOpen]);
 
   function setQuantity(medicineId: number, quantity: number) {
     setLines((prev) =>
@@ -203,7 +246,41 @@ export function PosPanel() {
           <Button type="submit" variant="outline">
             {t("catalog.searchSubmit")}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={
+              scanOpen ? t("staff.pos.scanStop") : t("staff.pos.scan")
+            }
+            title={scanOpen ? t("staff.pos.scanStop") : t("staff.pos.scan")}
+            onClick={() => {
+              setScanError(false);
+              setScanOpen((open) => !open);
+            }}
+          >
+            {scanOpen ? <XIcon /> : <CameraIcon />}
+          </Button>
         </form>
+
+        {scanOpen ? (
+          <div className="flex flex-col gap-2 rounded-xl border p-3">
+            <video
+              ref={videoRef}
+              className="w-full rounded-lg"
+              muted
+              playsInline
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("staff.pos.scanHint")}
+            </p>
+          </div>
+        ) : null}
+        {scanError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t("staff.pos.scanError")}
+          </p>
+        ) : null}
 
         {/* Phones: the sale opens in a sheet, so the search results stay on screen. */}
         <div className="sticky bottom-4 z-10 md:hidden">
