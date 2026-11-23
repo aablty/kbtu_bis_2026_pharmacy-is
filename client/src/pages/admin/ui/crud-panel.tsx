@@ -582,7 +582,7 @@ export function CrudPanel<T extends RowData>({
           open={viewing !== null}
           onOpenChange={(open) => !open && setViewing(null)}
         >
-          <SheetContent className="w-full sm:max-w-2xl">
+          <SheetContent className="w-full">
             {viewing ? (
               <>
                 <div className="flex flex-col gap-4 overflow-y-auto">

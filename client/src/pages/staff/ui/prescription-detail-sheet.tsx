@@ -34,7 +34,7 @@ export function PrescriptionDetailSheet({
 
   return (
     <Sheet open={prescription !== null} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl">
+      <SheetContent className="w-full">
         {prescription ? (
           <>
             <SheetHeader>
